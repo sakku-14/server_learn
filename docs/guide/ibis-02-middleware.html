@@ -1,0 +1,222 @@
+<title>ibis backend 解説 2章 — ミドルウェア</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}}
+:root[data-theme=light]{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+:root[data-theme=dark]{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.eyebrow{font-size:.78rem;letter-spacing:.18em;color:var(--accent);font-weight:600;text-transform:uppercase}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:2rem;line-height:1.45;margin:.4rem 0 .6rem;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 2rem;font-size:.98rem}
+h2{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:1.4rem;line-height:1.5;margin:3.2rem 0 .8rem;padding-top:1.6rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .no{color:var(--accent);font-size:.95rem;display:block;letter-spacing:.12em}
+h3{font-size:1.05rem;margin:2rem 0 .5rem}
+p{margin:.7rem 0}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.85em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+figure.code{margin:1.2rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+figure.code figcaption{background:var(--code-bg);color:var(--code-file);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.78rem;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.08)}
+figure.code pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:.9rem 1rem;overflow-x:auto;font-size:.8rem;line-height:1.75}
+figure.code pre code{background:none;border:none;padding:0;font-size:1em;color:inherit}
+figure.code .c{color:var(--code-cmt)}
+table{border-collapse:collapse;width:100%;margin:1.1rem 0;font-size:.9rem;line-height:1.7}
+th,td{border:1px solid var(--line);padding:.5rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:.82rem}
+td code{white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--surface);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0;font-size:.92rem}
+.note b:first-child{color:var(--accent)}
+details.term{border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:.55rem .9rem;margin:.8rem 0;font-size:.92rem}
+details.term summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details.term summary::marker{color:var(--muted)}
+details.term[open]{padding-bottom:.8rem}
+.flow{display:flex;flex-direction:column;margin:1.4rem 0}
+.lbox{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--lc,var(--accent));border-radius:6px;padding:.55rem .95rem}
+.lbox b{font-size:.95rem}
+.lbox small{display:block;color:var(--muted);font-size:.8rem;line-height:1.6}
+.lbox .tag{display:inline-block;font-size:.68rem;letter-spacing:.1em;color:var(--lc,var(--accent));font-weight:700;text-transform:uppercase}
+.arr{text-align:center;color:var(--muted);line-height:1.4;padding:.1rem 0;font-size:.9rem}
+.arr small{font-size:.72rem;letter-spacing:.05em}
+nav.series{display:block;margin:1.6rem 0 0}
+.series-links{display:flex;flex-wrap:wrap;gap:.5rem}
+.series-links a{display:flex;align-items:center;gap:.45rem;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.28rem .85rem .28rem .35rem;font-size:.82rem;background:var(--card)}
+.series-links a b{display:grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--surface);color:var(--muted);font-size:.78rem;font-family:"Hiragino Mincho ProN","Yu Mincho",serif}
+nav[data-current="1"] .p1,nav[data-current="2"] .p2,nav[data-current="3"] .p3,nav[data-current="4"] .p4,nav[data-current="5"] .p5{border-color:var(--accent);color:var(--ink);font-weight:600}
+nav[data-current="1"] .p1 b,nav[data-current="2"] .p2 b,nav[data-current="3"] .p3 b,nav[data-current="4"] .p4 b,nav[data-current="5"] .p5 b{background:var(--accent);color:var(--bg)}
+footer.fin{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:1.2rem;color:var(--muted);font-size:.85rem}
+</style>
+
+<div class="wrap">
+<p class="eyebrow">ibis backend を読み解く — 第2章(全5章)</p>
+<h1>ミドルウェア — すべてのリクエストが通る関所</h1>
+<p class="lede">Route にたどり着く前に、リクエストは複数の「関所」を順番に通過します。この章では <code>src/app.ts</code> と <code>src/middlewares/</code> を読み解き、各関所が何を守っているのかを理解します。</p>
+
+<nav class="series" data-current="2" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<h2><span class="no">2-1</span>ミドルウェアとは何か</h2>
+<p><strong>ミドルウェア</strong>は「本処理(Controller)の前後に挟み込む共通処理」です。認証・ログ・レート制限のような処理は全エンドポイントで必要になるため、各 Controller に毎回書くのではなく、通り道に1回だけ設置します。</p>
+<p>Hono のミドルウェアはこういう形をしています:</p>
+<figure class="code"><figcaption>ミドルウェアの基本形</figcaption><pre><code>const myMiddleware = createMiddleware(async (c, next) =&gt; {
+  <span class="c">// ① ここは「行き」に実行される(Controller より前)</span>
+  await next();  <span class="c">// ② 次のミドルウェア → 最終的に Controller へ</span>
+  <span class="c">// ③ ここは「帰り」に実行される(レスポンス確定後)</span>
+});</code></pre></figure>
+<p><code>await next()</code> を境に「行き」と「帰り」の処理が書けるのがポイント。玉ねぎのように処理が入れ子になるので<strong>オニオンモデル</strong>とも呼ばれます。<code>c</code> は <strong>Context(コンテキスト)</strong>で、リクエスト・レスポンス・共有データ(<code>c.set()</code> / <code>c.get()</code>)をまとめて持ち運ぶオブジェクトです。</p>
+
+<h2><span class="no">2-2</span>適用順序 — app.ts を上から読む</h2>
+<p>ミドルウェアは<strong>登録した順に実行される</strong>ため、app.ts の記述順そのものが設計です。</p>
+
+<div class="flow">
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">①</span> <b>secureHeaders()</b><small>防御用 HTTP ヘッダーを全レスポンスに付与</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">②</span> <b>cors(…)</b><small>ブラウザからのアクセスを許可リスト方式で制御</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">③</span> <b>requestContext</b><small>リクエスト ID の採番と、アクセスログの記録</small></div>
+<div class="arr">↓ <small>/health はここで応答して終了(以降の関所を通らない)</small></div>
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">④</span> <b>globalRateLimit</b><small>IP ごとに毎分 100 回まで</small></div>
+<div class="arr">↓ <small>/auth・/users のルート内でさらに…</small></div>
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">⑤</span> <b>apiVersion</b><small>Api-Version: 1 ヘッダーの検証(全ルート)</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">⑥</span> <b>auth</b> / <b>authRateLimit</b><small>auth: JWT 検証(保護ルートのみ)/ authRateLimit: 認証系は毎分 10 回まで</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-route)"><span class="tag">Route</span> <b>Controller の本処理へ</b><small></small></div>
+</div>
+
+<div class="note"><b>順序の意図:</b> ヘルスチェック(<code>/health</code>)がレート制限より<strong>前</strong>にあるのは、監視システム(ロードバランサー等)が高頻度で叩いてもブロックされないため。逆に認証系の厳しいレート制限は<strong>ルート側</strong>に置き、必要な窓口だけに効かせています。</div>
+
+<h2><span class="no">2-3</span>各ミドルウェアの中身</h2>
+
+<h3>① secureHeaders — ブラウザ向けの基本防御</h3>
+<p>Hono 組み込み。<code>X-Frame-Options</code>(クリックジャッキング対策)など、セキュリティ系のレスポンスヘッダーをまとめて付けます。1行で「やらない理由がない」定番対策が入るので、業務でもほぼ必ず入れます。</p>
+
+<h3>② cors — どのサイトからのアクセスを許すか</h3>
+<figure class="code"><figcaption>src/app.ts(抜粋)</figcaption><pre><code>const allowedOrigins = (env.CORS_ORIGINS ?? '').split(',').map(...).filter(Boolean);
+app.use('*', cors({
+  origin: (origin) =&gt; {
+    if (allowedOrigins.includes(origin)) return origin;   <span class="c">// 許可リストに一致</span>
+    if (!isProduction &amp;&amp; /localhost|127\.0\.0\.1/.test(origin)) return origin;
+    return null;                                          <span class="c">// それ以外は拒否</span>
+  },
+}));</code></pre></figure>
+<details class="term"><summary>CORS とは?</summary>
+<p><strong>CORS</strong>(Cross-Origin Resource Sharing)は、ブラウザ上の JavaScript が「別のドメインの API」を呼ぶことを制御する仕組み。ブラウザは既定で別ドメインへのリクエストの結果を JavaScript に渡しません。サーバーが「このオリジン(ドメイン)なら OK」とヘッダーで宣言することで許可します。重要なのは、<strong>これはブラウザだけのルール</strong>だという点。Flutter のネイティブアプリや curl には CORS は関係ありません。ここで設定しているのは API 仕様書(<code>/reference</code>)などブラウザ経由のアクセスのためです。</p>
+</details>
+
+<h3>③ requestContext — ログと「リクエストの背番号」</h3>
+<figure class="code"><figcaption>src/middlewares/requestContext.ts(要約)</figcaption><pre><code>const requestId = crypto.randomUUID();          <span class="c">// このリクエスト固有の ID</span>
+const reqLogger = logger.child({ requestId }); <span class="c">// ID 付きの子ロガー</span>
+c.set('logger', reqLogger);                     <span class="c">// 以降の層はこれでログを書く</span>
+c.header('X-Request-Id', requestId);            <span class="c">// クライアントにも ID を返す</span>
+
+await next();                                   <span class="c">// ← 本処理</span>
+
+reqLogger.info({ method, path, status, responseTimeMs }, 'request completed');</code></pre></figure>
+<p>すべてのリクエストに UUID の背番号(<strong>requestId</strong>)を振り、その背番号入りのロガーを Context に載せます。以降どの層でログを書いても自動で requestId が付くので、<strong>大量のログの中から「あの1回のリクエストに関するログだけ」を抽出できます</strong>。障害調査(トラブルシュート)の生命線で、業務ではこの仕組みがないと運用になりません。</p>
+<details class="term"><summary>構造化ログとは?</summary>
+<p>ログを「人間向けの文章」ではなく <strong>JSON</strong> で出すこと。<code>{"level":"info","requestId":"...","status":200,"responseTimeMs":12}</code> のような形式なら、ログ収集基盤(Datadog、CloudWatch 等)で「status が 500 のログだけ」「応答が 1 秒超のログだけ」と機械的に検索・集計できます。このプロジェクトのロガー Pino は高速な構造化ログの定番です。開発中は <code>pino-pretty</code> で人間に読みやすく整形され、<code>logs/YYYYMMDD.log</code> にも日次ファイルとして保存されます(30日で自動削除)。</p>
+</details>
+
+<h3>④ rateLimit — 使いすぎ・攻撃への防波堤</h3>
+<figure class="code"><figcaption>src/middlewares/rateLimit.ts(抜粋)</figcaption><pre><code>export const globalRateLimit = createRateLimiter(100); <span class="c">// API 全体: 毎分100回/IP</span>
+export const authRateLimit   = createRateLimiter(10);  <span class="c">// 認証系: 毎分10回/IP</span></code></pre></figure>
+<p>IP アドレス単位で1分あたりの回数を制限します。認証系だけ厳しいのは、<strong>パスワード総当たり攻撃(ブルートフォース)対策</strong>。毎分10回では総当たりが事実上不可能になります。超過すると <code>429 RATE_LIMITED</code> が返ります。</p>
+<div class="note"><b>業務での注意点(コードのコメントにも明記):</b> ① IP の特定に <code>X-Forwarded-For</code> ヘッダーを使うため、本番では必ずリバースプロキシ/ロードバランサーの背後に置くこと(直接公開だと偽装可能)。② カウントは<strong>インメモリ</strong>(サーバーのメモリ上)なので、サーバーを複数台に増やす(スケールアウト)なら Redis 等の共有ストアに差し替えが必要。</div>
+
+<h3>⑤ apiVersion — アプリ世界特有のバージョン管理</h3>
+<p>全リクエストに <code>Api-Version: 1</code> ヘッダーを必須にし、無い・非対応なら 400 を返します(<code>src/middlewares/apiVersion.ts</code>)。</p>
+<details class="term"><summary>なぜ API にバージョンが要るのか?</summary>
+<p>Web と違い、スマホアプリは<strong>ユーザーが更新しない限り古いバイナリが動き続けます</strong>。API のレスポンス形式を変えると、古いアプリが壊れる。そこで「バージョン 1 の契約」を宣言させておき、互換性を壊す変更をするときは バージョン 2 を新設して両方をしばらく併存させます。最初からこのヘッダーを必須にしておくのは、モバイルバックエンドの定石です。</p>
+</details>
+
+<h3>⑥ auth — JWT 検証(詳細は第3章)</h3>
+<figure class="code"><figcaption>src/middlewares/auth.ts(要約)</figcaption><pre><code>const authHeader = c.req.header('Authorization');   <span class="c">// "Bearer eyJhbG..." 形式</span>
+const token = authHeader.slice('Bearer '.length);
+({ userId } = await verifyToken(token));            <span class="c">// 署名と有効期限を検証</span>
+c.set('user', { id: userId });                       <span class="c">// 後続の層へ「本人 ID」を渡す</span></code></pre></figure>
+<p>トークンが正しければ <code>c.set('user', …)</code> で本人の ID を Context に載せ、Controller は <code>c.get('user')</code> で受け取ります。<strong>検証で DB を参照しない</strong>のがこの設計の特徴で、理由は第3章で説明します。</p>
+
+<h2><span class="no">2-4</span>エラーハンドラー — 例外の終着駅</h2>
+<p>ここまでの関所や、この先の Service で問題が起きたとき、コードは <code>throw</code>(例外を投げる)するだけです。投げられた例外はすべて <code>app.onError(errorHandler)</code> に集まります。</p>
+<figure class="code"><figcaption>src/middlewares/errorHandler.ts(要約)</figcaption><pre><code>export function errorHandler(err: Error, c: Context): Response {
+  if (err instanceof AppError) {          <span class="c">// ① 業務上「想定内」のエラー</span>
+    return c.json({ code: err.code, detail: err.detail }, err.status);
+  }
+  if (err instanceof HTTPException) {     <span class="c">// ② Hono 内部のエラー</span>
+    return c.json({ code: 'INTERNAL_ERROR', ... }, err.status);
+  }
+  log.error({ err }, '未処理のエラー');     <span class="c">// ③ 想定外 → スタックトレース付きで記録</span>
+  return c.json({ code: 'INTERNAL_ERROR', ... }, 500);
+}</code></pre></figure>
+<p>対になるのが <code>src/lib/errors.ts</code> の <strong>AppError</strong>。「ステータスコード + エラーコード + 詳細」を持つ自作の例外クラスで、<code>unauthorized()</code> <code>notFound()</code> のような生成ヘルパーが用意されています。</p>
+<div class="tblwrap">
+<table>
+<tr><th>ヘルパー</th><th>HTTP</th><th>code</th><th>使う場面</th></tr>
+<tr><td><code>validationError(detail)</code></td><td>400</td><td><code>VALIDATION_ERROR</code></td><td>入力の形式が不正</td></tr>
+<tr><td><code>unauthorized(msg)</code></td><td>401</td><td><code>UNAUTHORIZED</code></td><td>未ログイン・トークン不正</td></tr>
+<tr><td><code>notFound(msg)</code></td><td>404</td><td><code>NOT_FOUND</code></td><td>対象データが存在しない</td></tr>
+<tr><td><code>conflict(detail)</code></td><td>409</td><td><code>CONFLICT</code></td><td>メールアドレス重複など</td></tr>
+<tr><td><code>tooManyRequests()</code></td><td>429</td><td><code>RATE_LIMITED</code></td><td>レート制限超過</td></tr>
+<tr><td>(自動)</td><td>500</td><td><code>INTERNAL_ERROR</code></td><td>想定外のバグ・障害</td></tr>
+</table>
+</div>
+<p>この設計により、レスポンスのエラー形式は必ず <code>{ "code": "...", "detail": {...} }</code> に統一されます。これを <strong>エラー契約</strong> と呼び、アプリ側(Flutter)は code を見て「401 ならログイン画面へ」のような分岐を安心して書けます。</p>
+<div class="note"><b>この設計の気持ちよさ:</b> Service のコードは <code>throw conflict({...})</code> と1行書くだけ。try/catch をあちこちに書かず、「エラーをどう HTTP に変換するか」は errorHandler が一手に引き受けます。<strong>関心の分離</strong>の好例です。</div>
+
+<h2><span class="no">2-5</span>まとめ — この章で読めるようになったファイル</h2>
+<div class="tblwrap">
+<table>
+<tr><th>ファイル</th><th>一言でいうと</th></tr>
+<tr><td><code>src/app.ts</code></td><td>関所の設置順を決める組み立て図</td></tr>
+<tr><td><code>src/middlewares/requestContext.ts</code></td><td>requestId の採番とアクセスログ</td></tr>
+<tr><td><code>src/middlewares/rateLimit.ts</code></td><td>IP 単位の回数制限(全体100/認証10 毎分)</td></tr>
+<tr><td><code>src/middlewares/apiVersion.ts</code></td><td>Api-Version ヘッダーの検証</td></tr>
+<tr><td><code>src/middlewares/auth.ts</code></td><td>JWT 検証 → <code>c.set('user')</code></td></tr>
+<tr><td><code>src/middlewares/errorHandler.ts</code> + <code>src/lib/errors.ts</code></td><td>例外の終着駅と、エラー契約 <code>{ code, detail }</code></td></tr>
+</table>
+</div>
+<p>次章は⑥で流した <strong>認証(JWT + リフレッシュトークン)</strong> を深掘りします。</p>
+
+<nav class="series" data-current="2" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<footer class="fin">ibis backend 解説シリーズ 2/5 — コードは 2026-07-07 時点の <code>server/</code> を基に解説しています。</footer>
+</div>

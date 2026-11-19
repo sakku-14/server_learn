@@ -1,0 +1,252 @@
+<title>ibis backend 解説 3章 — 認証のしくみ</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}}
+:root[data-theme=light]{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+:root[data-theme=dark]{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.eyebrow{font-size:.78rem;letter-spacing:.18em;color:var(--accent);font-weight:600;text-transform:uppercase}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:2rem;line-height:1.45;margin:.4rem 0 .6rem;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 2rem;font-size:.98rem}
+h2{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:1.4rem;line-height:1.5;margin:3.2rem 0 .8rem;padding-top:1.6rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .no{color:var(--accent);font-size:.95rem;display:block;letter-spacing:.12em}
+h3{font-size:1.05rem;margin:2rem 0 .5rem}
+p{margin:.7rem 0}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.85em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+figure.code{margin:1.2rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+figure.code figcaption{background:var(--code-bg);color:var(--code-file);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.78rem;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.08)}
+figure.code pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:.9rem 1rem;overflow-x:auto;font-size:.8rem;line-height:1.75}
+figure.code pre code{background:none;border:none;padding:0;font-size:1em;color:inherit}
+figure.code .c{color:var(--code-cmt)}
+table{border-collapse:collapse;width:100%;margin:1.1rem 0;font-size:.9rem;line-height:1.7}
+th,td{border:1px solid var(--line);padding:.5rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:.82rem}
+td code{white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--surface);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0;font-size:.92rem}
+.note b:first-child{color:var(--accent)}
+details.term{border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:.55rem .9rem;margin:.8rem 0;font-size:.92rem}
+details.term summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details.term summary::marker{color:var(--muted)}
+details.term[open]{padding-bottom:.8rem}
+.flow{display:flex;flex-direction:column;margin:1.4rem 0}
+.lbox{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--lc,var(--accent));border-radius:6px;padding:.55rem .95rem}
+.lbox b{font-size:.95rem}
+.lbox small{display:block;color:var(--muted);font-size:.8rem;line-height:1.6}
+.lbox .tag{display:inline-block;font-size:.68rem;letter-spacing:.1em;color:var(--lc,var(--accent));font-weight:700;text-transform:uppercase}
+.arr{text-align:center;color:var(--muted);line-height:1.4;padding:.1rem 0;font-size:.9rem}
+.arr small{font-size:.72rem;letter-spacing:.05em}
+nav.series{display:block;margin:1.6rem 0 0}
+.series-links{display:flex;flex-wrap:wrap;gap:.5rem}
+.series-links a{display:flex;align-items:center;gap:.45rem;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.28rem .85rem .28rem .35rem;font-size:.82rem;background:var(--card)}
+.series-links a b{display:grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--surface);color:var(--muted);font-size:.78rem;font-family:"Hiragino Mincho ProN","Yu Mincho",serif}
+nav[data-current="1"] .p1,nav[data-current="2"] .p2,nav[data-current="3"] .p3,nav[data-current="4"] .p4,nav[data-current="5"] .p5{border-color:var(--accent);color:var(--ink);font-weight:600}
+nav[data-current="1"] .p1 b,nav[data-current="2"] .p2 b,nav[data-current="3"] .p3 b,nav[data-current="4"] .p4 b,nav[data-current="5"] .p5 b{background:var(--accent);color:var(--bg)}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:1.2rem 0}
+@media (max-width:640px){.twocol{grid-template-columns:1fr}}
+.tokencard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;font-size:.88rem}
+.tokencard h4{margin:0 0 .4rem;font-size:.95rem;color:var(--accent)}
+.tokencard ul{margin:.2rem 0;padding-left:1.2rem}
+footer.fin{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:1.2rem;color:var(--muted);font-size:.85rem}
+</style>
+
+<div class="wrap">
+<p class="eyebrow">ibis backend を読み解く — 第3章(全5章)</p>
+<h1>認証のしくみ — 2トークン方式を理解する</h1>
+<p class="lede">このサーバーの認証は「短命のアクセストークン(JWT)」と「長命のリフレッシュトークン」の2枚看板です。なぜ2つ必要なのか、パスワードはどう守られているのか、<code>src/services/authService.ts</code> と <code>src/lib/</code> を軸に読み解きます。</p>
+
+<nav class="series" data-current="3" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<h2><span class="no">3-1</span>全体像 — なぜトークンが2種類あるのか</h2>
+<p>ログインに成功すると、サーバーは2種類のトークンを返します。</p>
+<div class="twocol">
+<div class="tokencard"><h4>アクセストークン(JWT)</h4>
+<ul>
+<li>有効期限 <strong>15分</strong>(短命)</li>
+<li>毎リクエストの <code>Authorization: Bearer</code> ヘッダーに載せる</li>
+<li>検証は署名チェックのみ、<strong>DB 参照なし</strong>(高速)</li>
+<li>サーバーには保存されない</li>
+</ul></div>
+<div class="tokencard"><h4>リフレッシュトークン</h4>
+<ul>
+<li>有効期限 <strong>30日</strong>(長命)</li>
+<li>アクセストークンの期限が切れたときだけ <code>/auth/refresh</code> に送る</li>
+<li><strong>ハッシュが DB に保存</strong>され、照合される</li>
+<li>1回使うと新しいものに交換される(ローテーション)</li>
+</ul></div>
+</div>
+<p>2つに分ける理由は、<strong>「安全性」と「速度・利便性」のトレードオフを両取りする</strong>ためです。</p>
+<ul>
+<li>アクセストークンを短命にする → 盗まれても最長15分で無効になる。しかも検証に DB を見ないので毎リクエストが高速。</li>
+<li>リフレッシュトークンを長命にする → ユーザーは30日間ログインし直さなくてよい。こちらは DB で管理されるので、ログアウトや不正検知で<strong>サーバー側から即座に無効化できる</strong>。</li>
+</ul>
+<div class="note"><b>もし1種類だったら:</b> 長命の JWT 1枚だと、盗まれたとき30日間止める手段がない(JWT はサーバーに保存されないため)。短命の JWT 1枚だと15分ごとに再ログインが必要でアプリとして使い物にならない。毎回 DB でセッションを引く方式(古典的なセッション認証)は無効化が簡単な代わりに毎リクエスト DB アクセスが発生する。2トークン方式はこれらの弱点を組み合わせで消した、モバイル API の定番構成です。</div>
+
+<h2><span class="no">3-2</span>JWT — 中身と検証のしくみ</h2>
+<details class="term"><summary>JWT とは?</summary>
+<p><strong>JWT</strong>(JSON Web Token、「ジョット」)は「<code>ヘッダー.ペイロード.署名</code>」の3パートをドットで繋いだ文字列。ペイロードには <code>userId</code> や有効期限 <code>exp</code> が JSON で入っており、<strong>誰でも読めます</strong>(Base64 エンコードされているだけ)。安全性は最後の<strong>署名</strong>が担保します。署名はサーバーだけが知る秘密鍵(<code>JWT_SECRET</code>)から計算されるため、ペイロードを1文字でも改ざんすると署名が合わなくなり検証で弾かれます。「読めるが偽造できない身分証」と覚えてください。</p>
+</details>
+<figure class="code"><figcaption>src/lib/jwt.ts(抜粋)</figcaption><pre><code>export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;  <span class="c">// 15分</span>
+
+export async function issueToken(userId: number): Promise&lt;string&gt; {
+  const now = Math.floor(Date.now() / 1000);
+  return sign(
+    { userId, iat: now, exp: now + ACCESS_TOKEN_TTL_SECONDS, jti: crypto.randomUUID() },
+    env.JWT_SECRET,
+    'HS256',   <span class="c">// 署名アルゴリズム(共通鍵方式)</span>
+  );
+}</code></pre></figure>
+<div class="tblwrap">
+<table>
+<tr><th>クレーム</th><th>意味</th><th>このコードでの役割</th></tr>
+<tr><td><code>userId</code></td><td>独自クレーム</td><td>「誰のトークンか」。auth ミドルウェアがここから本人 ID を得る</td></tr>
+<tr><td><code>iat</code></td><td>issued at(発行時刻)</td><td>いつ発行されたか</td></tr>
+<tr><td><code>exp</code></td><td>expiration(失効時刻)</td><td>検証時に自動チェックされる。これが「15分」の正体</td></tr>
+<tr><td><code>jti</code></td><td>JWT ID(トークン固有 ID)</td><td>ランダム値。同じ秒に発行しても毎回違うトークンになる</td></tr>
+</table>
+</div>
+<p>検証側(<code>verifyToken</code>)は署名と <code>exp</code> を確認するだけで、<strong>DB には一切アクセスしません</strong>。これが第2章で見た auth ミドルウェアの「DB を参照しない」設計の根拠です。失効管理はリフレッシュトークン側に寄せてあるので、仮に古い端末のアクセストークンが生き残っていても最長15分で自然に死にます。</p>
+
+<h2><span class="no">3-3</span>パスワードの守り方 — Argon2id</h2>
+<figure class="code"><figcaption>src/lib/password.ts</figcaption><pre><code>import { hash, verify } from '@node-rs/argon2';
+
+export function hashPassword(password: string): Promise&lt;string&gt; {
+  return hash(password);   <span class="c">// ソルト自動生成。結果例: $argon2id$v=19$m=19456,t=2,p=1$...</span>
+}
+export function verifyPassword(hashed: string, password: string): Promise&lt;boolean&gt; {
+  return verify(hashed, password).catch(() =&gt; false);
+}</code></pre></figure>
+<p>パスワードは<strong>絶対に平文(そのままの文字列)で保存しません</strong>。DB に入るのは Argon2id という一方向関数を通した「ハッシュ」で、ここから元のパスワードは復元できません。ログイン時は入力パスワードを同じ関数に通し、結果が一致するかで照合します。</p>
+<details class="term"><summary>なぜ SHA-256 ではなく Argon2id?(ソルトとは?)</summary>
+<p>SHA-256 のような高速ハッシュは、攻撃者も高速に総当たりできてしまいます(GPU で毎秒数十億回)。<strong>Argon2id</strong> は意図的に計算を重く・メモリ食いにした「パスワード専用」ハッシュで、OWASP(Web セキュリティの標準団体)の第一推奨です。<strong>ソルト</strong>はハッシュ計算に混ぜるランダム値で、同じパスワードでも毎回違うハッシュになるようにするもの。「よくあるパスワードのハッシュ一覧表(レインボーテーブル)」との照合攻撃を無効化します。Argon2 はソルトを自動生成してハッシュ文字列に埋め込むため、コードでソルトを管理する必要がありません。</p>
+</details>
+
+<h2><span class="no">3-4</span>リフレッシュトークン — 高エントロピー乱数 + ハッシュ保存</h2>
+<figure class="code"><figcaption>src/lib/refreshToken.ts(要約)</figcaption><pre><code>export function generateRefreshToken(): string {
+  return randomBytes(48).toString('base64url');  <span class="c">// 推測不能なランダム値(JWTではない)</span>
+}
+export function hashRefreshToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');  <span class="c">// DB にはこちらを保存</span>
+}</code></pre></figure>
+<p>2つの重要な設計判断が詰まっています:</p>
+<ul>
+<li><strong>DB にはハッシュだけを保存する。</strong> 万一 DB が流出しても、攻撃者はハッシュからトークン本体を復元できず、なりすましできません。</li>
+<li><strong>こちらは SHA-256 でよい。</strong> パスワードと違い 48 バイトの完全ランダム値(高エントロピー)なので総当たりが物理的に不可能。重い Argon2 を使う必要がなく、毎リクエスト高速に照合できます。「何をどのハッシュで守るか」の使い分けは業務でそのまま役立つ知識です。</li>
+</ul>
+<p>DB 側の置き場所は <code>users</code> テーブルの2列(<code>refresh_token_hash</code>, <code>refresh_token_expires_at</code>)です(<code>prisma/schema.prisma</code>)。</p>
+
+<h2><span class="no">3-5</span>4つのエンドポイントの流れ</h2>
+<p>認証の全処理は <code>src/services/authService.ts</code> にあり、心臓部は共通関数 <code>issueSession()</code> です。</p>
+<figure class="code"><figcaption>src/services/authService.ts(抜粋)</figcaption><pre><code>async function issueSession(user: User): Promise&lt;LoginResult&gt; {
+  const token = await issueToken(user.id);              <span class="c">// ① JWT 発行(15分)</span>
+  const refreshToken = generateRefreshToken();          <span class="c">// ② リフレッシュトークン生成</span>
+  await userRepository.updateRefreshToken(              <span class="c">// ③ ハッシュを DB に上書き保存</span>
+    user.id, hashRefreshToken(refreshToken), refreshTokenExpiresAt(),
+  );
+  return { token, refreshToken, user: {...} };
+}</code></pre></figure>
+
+<h3>register / login — 入口</h3>
+<div class="flow">
+<div class="lbox" style="--lc:var(--l-svc)"><b>register</b><small>入力検証(Zod) → メール重複チェック(あれば 409 CONFLICT) → パスワードを Argon2id でハッシュ化して INSERT → issueSession(登録と同時に自動ログイン)</small></div>
+<div class="arr">↓ どちらも最後は同じ</div>
+<div class="lbox" style="--lc:var(--l-svc)"><b>login</b><small>入力検証 → メールでユーザー検索 → verifyPassword で照合(失敗なら 401) → issueSession</small></div>
+</div>
+<div class="note"><b>細部に注目:</b> login の失敗メッセージは「メールアドレス<strong>または</strong>パスワードが正しくありません」で統一されています。「メールが存在しない」と「パスワードが違う」を区別して返すと、攻撃者に「このメールは登録済み」という情報を与えてしまうため(ユーザー列挙攻撃対策)、わざと曖昧にするのが定石です。</div>
+
+<h3>refresh — トークンの交換とローテーション</h3>
+<figure class="code"><figcaption>src/services/authService.ts(抜粋)</figcaption><pre><code>async refresh(input: unknown): Promise&lt;LoginResult&gt; {
+  const { refreshToken } = validate(refreshSchema, input);
+  <span class="c">// 受け取ったトークンをハッシュ化して DB を検索(平文同士は比較しない)</span>
+  const user = await userRepository.findByRefreshTokenHash(hashRefreshToken(refreshToken));
+  if (!user || !user.refreshTokenExpiresAt || user.refreshTokenExpiresAt &lt; new Date()) {
+    throw unauthorized('リフレッシュトークンが無効です');
+  }
+  return issueSession(user);  <span class="c">// ← 新しいトークンで DB を上書き = 古いトークンは即無効</span>
+}</code></pre></figure>
+<p>ポイントは最後の <code>issueSession()</code>。新しいリフレッシュトークンのハッシュで DB を<strong>上書き</strong>するため、いま使ったトークンはこの瞬間に無効になります。これを<strong>リフレッシュトークンローテーション</strong>と呼びます。トークンが盗まれてどこかで使われると、正規ユーザー側のトークンが突然効かなくなるので、盗難の検知にもつながります。</p>
+
+<h3>logout — サーバー側の破棄</h3>
+<p><code>updateRefreshToken(userId, null, null)</code> で DB のハッシュを消すだけ。以後そのリフレッシュトークンは使えません。手元のアクセストークンは残りますが、最長15分で失効します。</p>
+
+<h2><span class="no">3-6</span>「後勝ち方式」 — 1ユーザー1セッション</h2>
+<p><code>users</code> テーブルにはリフレッシュトークンの列が<strong>1組しかない</strong>ため、別の端末でログインすると前の端末のトークンは上書きされて無効になります。最後にログインした端末だけが有効 — これが<strong>後勝ち方式</strong>です。</p>
+<div class="tblwrap">
+<table>
+<tr><th></th><th>このプロジェクト(後勝ち)</th><th>複数端末対応する場合</th></tr>
+<tr><td>テーブル設計</td><td>users にトークン列を直接持つ</td><td>refresh_tokens を別テーブルに分離し、1ユーザー N 行</td></tr>
+<tr><td>実装の複雑さ</td><td>シンプル</td><td>端末管理・掃除(期限切れ行の削除)が必要</td></tr>
+<tr><td>ユーザー体験</td><td>別端末でログインすると前の端末はログアウトされる</td><td>複数端末で同時ログイン可</td></tr>
+</table>
+</div>
+<p>開発中に「さっきの token が急に 401 になった」と感じたら、大抵は別ターミナル・別端末で再ログインして前のトークンが上書きされたのが原因です(よくある詰まりポイント)。</p>
+
+<h2><span class="no">3-7</span>クライアント(Flutter)から見た使い方</h2>
+<div class="flow">
+<div class="lbox" style="--lc:var(--l-db)"><b>1. ログイン成功</b><small>token と refreshToken を受け取り、端末の安全な保存領域(Keychain / Keystore)へ</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-db)"><b>2. 通常のリクエスト</b><small>毎回 <code>Authorization: Bearer &lt;token&gt;</code> と <code>Api-Version: 1</code> を付ける</small></div>
+<div class="arr">↓ 15分経過して 401 が返ってきたら</div>
+<div class="lbox" style="--lc:var(--l-db)"><b>3. 自動リフレッシュ</b><small><code>POST /auth/refresh</code> に refreshToken を送る → 新しい2トークンに差し替えて、失敗したリクエストを再送(ユーザーは何も気づかない)</small></div>
+<div class="arr">↓ refresh も 401 なら(30日放置 or 別端末ログイン)</div>
+<div class="lbox" style="--lc:var(--l-db)"><b>4. ログイン画面へ</b><small>再ログインしてもらう</small></div>
+</div>
+
+<h2><span class="no">3-8</span>セキュリティ設計まとめ</h2>
+<div class="tblwrap">
+<table>
+<tr><th>脅威</th><th>このコードの対策</th><th>場所</th></tr>
+<tr><td>パスワード総当たり</td><td>Argon2id + 認証系レートリミット(毎分10回)</td><td><code>lib/password.ts</code> / <code>middlewares/rateLimit.ts</code></td></tr>
+<tr><td>DB 流出</td><td>パスワードは Argon2id、リフレッシュトークンは SHA-256 ハッシュで保存</td><td><code>lib/password.ts</code> / <code>lib/refreshToken.ts</code></td></tr>
+<tr><td>トークン盗難</td><td>アクセストークン15分 + ローテーションで盗難を検知・限定</td><td><code>lib/jwt.ts</code> / <code>authService.refresh</code></td></tr>
+<tr><td>トークン偽造</td><td>HS256 署名。本番では弱い JWT_SECRET を起動時に拒否</td><td><code>lib/jwt.ts</code> / <code>config/env.ts</code></td></tr>
+<tr><td>ユーザー列挙</td><td>ログイン失敗の理由を曖昧に返す</td><td><code>authService.login</code></td></tr>
+</table>
+</div>
+<p>次章では、ここまでの部品が実際に組み合わさる様子を、1つのリクエストを全層縦断で追いながら読みます。</p>
+
+<nav class="series" data-current="3" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<footer class="fin">ibis backend 解説シリーズ 3/5 — コードは 2026-07-07 時点の <code>server/</code> を基に解説しています。</footer>
+</div>

@@ -1,0 +1,257 @@
+<title>ibis backend 解説 1章 — 全体像</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}}
+:root[data-theme=light]{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+:root[data-theme=dark]{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.eyebrow{font-size:.78rem;letter-spacing:.18em;color:var(--accent);font-weight:600;text-transform:uppercase}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:2rem;line-height:1.45;margin:.4rem 0 .6rem;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 2rem;font-size:.98rem}
+h2{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:1.4rem;line-height:1.5;margin:3.2rem 0 .8rem;padding-top:1.6rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .no{color:var(--accent);font-size:.95rem;display:block;letter-spacing:.12em}
+h3{font-size:1.05rem;margin:2rem 0 .5rem}
+p{margin:.7rem 0}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.85em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+figure.code{margin:1.2rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+figure.code figcaption{background:var(--code-bg);color:var(--code-file);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.78rem;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.08)}
+figure.code pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:.9rem 1rem;overflow-x:auto;font-size:.8rem;line-height:1.75}
+figure.code pre code{background:none;border:none;padding:0;font-size:1em;color:inherit}
+figure.code .c{color:var(--code-cmt)}
+table{border-collapse:collapse;width:100%;margin:1.1rem 0;font-size:.9rem;line-height:1.7}
+th,td{border:1px solid var(--line);padding:.5rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:.82rem}
+td code{white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--surface);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0;font-size:.92rem}
+.note b:first-child{color:var(--accent)}
+details.term{border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:.55rem .9rem;margin:.8rem 0;font-size:.92rem}
+details.term summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details.term summary::marker{color:var(--muted)}
+details.term[open]{padding-bottom:.8rem}
+.flow{display:flex;flex-direction:column;margin:1.4rem 0}
+.lbox{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--lc,var(--accent));border-radius:6px;padding:.55rem .95rem}
+.lbox b{font-size:.95rem}
+.lbox small{display:block;color:var(--muted);font-size:.8rem;line-height:1.6}
+.lbox .tag{display:inline-block;font-size:.68rem;letter-spacing:.1em;color:var(--lc,var(--accent));font-weight:700;text-transform:uppercase}
+.arr{text-align:center;color:var(--muted);line-height:1.4;padding:.1rem 0;font-size:.9rem}
+.arr small{font-size:.72rem;letter-spacing:.05em}
+nav.series{display:block;margin:1.6rem 0 0}
+.series-links{display:flex;flex-wrap:wrap;gap:.5rem}
+.series-links a{display:flex;align-items:center;gap:.45rem;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.28rem .85rem .28rem .35rem;font-size:.82rem;background:var(--card)}
+.series-links a b{display:grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--surface);color:var(--muted);font-size:.78rem;font-family:"Hiragino Mincho ProN","Yu Mincho",serif}
+nav[data-current="1"] .p1,nav[data-current="2"] .p2,nav[data-current="3"] .p3,nav[data-current="4"] .p4,nav[data-current="5"] .p5{border-color:var(--accent);color:var(--ink);font-weight:600}
+nav[data-current="1"] .p1 b,nav[data-current="2"] .p2 b,nav[data-current="3"] .p3 b,nav[data-current="4"] .p4 b,nav[data-current="5"] .p5 b{background:var(--accent);color:var(--bg)}
+.dirmap{border:1px solid var(--line);border-radius:8px;background:var(--card);margin:1.2rem 0;overflow:hidden}
+.dirmap .row{display:grid;grid-template-columns:15rem 1fr;gap:1rem;padding:.42rem 1rem;align-items:baseline;font-size:.88rem}
+.dirmap .row:nth-child(even){background:var(--surface)}
+.dirmap .row code{background:none;border:none;padding:0;font-size:.8rem;white-space:pre;color:var(--muted)}
+.dirmap .row.main code{font-weight:700;color:var(--ink)}
+.dirmap .row span{color:var(--muted);line-height:1.7}
+.dirmap .row.main span{color:var(--ink)}
+.dirmap .dot{display:inline-block;width:.62em;height:.62em;border-radius:2px;background:var(--lc,transparent);margin-right:.4em}
+@media (max-width:620px){.dirmap .row{grid-template-columns:1fr;gap:.05rem;padding:.5rem 1rem}.dirmap .row span{padding-left:1.4rem;font-size:.82rem}}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--lc,var(--accent));border:1px solid currentColor;border-radius:4px;padding:0 .4em;vertical-align:.08em}
+footer.fin{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:1.2rem;color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:no-preference){details.term summary{transition:color .15s}}
+</style>
+
+<div class="wrap">
+<p class="eyebrow">ibis backend を読み解く — 第1章(全5章)</p>
+<h1>全体像 — このサーバーは何者で、どう動いているのか</h1>
+<p class="lede">Flutter アプリ「ibis」の裏側で動くバックエンド API を、マクロ(全体の地図)からミクロ(1行のコード)へ順に読み解くシリーズです。第1章では、技術スタック・アーキテクチャ・ディレクトリ構成という「地図」を頭に入れます。</p>
+
+<nav class="series" data-current="1" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<h2><span class="no">1-1</span>このサーバーの役割</h2>
+<p>このプロジェクト(<code>server/</code>)は、スマホアプリ向けの <strong>バックエンド API サーバー</strong> です。アプリ(Flutter)は画面を描くだけで、「ユーザー登録」「ログイン」「プロフィール取得」といったデータの処理はすべて HTTP でこのサーバーに依頼します。サーバーは処理結果を JSON で返します。</p>
+
+<details class="term"><summary>API / エンドポイントとは?</summary>
+<p><strong>API</strong>(Application Programming Interface)は「プログラム同士の窓口」の総称。この文脈では「HTTP でリクエストを受けて JSON を返すサーバー」を指します。<strong>エンドポイント</strong>はその窓口の1つ1つで、「HTTP メソッド + URL パス」の組で表します(例: <code>POST /auth/login</code>)。業務では「ログインのエンドポイント叩いて」のように使います。</p>
+</details>
+
+<p>現在このサーバーが持つエンドポイントは次の通りです。</p>
+<div class="tblwrap">
+<table>
+<tr><th>エンドポイント</th><th>役割</th><th>認証</th></tr>
+<tr><td><code>POST /auth/register</code></td><td>新規登録(登録と同時に自動ログイン)</td><td>不要</td></tr>
+<tr><td><code>POST /auth/login</code></td><td>ログイン。トークンを発行</td><td>不要</td></tr>
+<tr><td><code>POST /auth/refresh</code></td><td>トークンの再発行(第3章)</td><td>不要*</td></tr>
+<tr><td><code>POST /auth/logout</code></td><td>ログアウト。サーバー側のトークンを破棄</td><td>必要</td></tr>
+<tr><td><code>GET /users/me</code></td><td>自分のプロフィール取得</td><td>必要</td></tr>
+<tr><td><code>DELETE /users/me</code></td><td>退会(ユーザー削除)</td><td>必要</td></tr>
+<tr><td><code>GET /health</code> ・ <code>/health/ready</code></td><td>死活監視(ヘルスチェック)</td><td>不要</td></tr>
+<tr><td><code>GET /reference</code> ・ <code>/doc</code></td><td>API 仕様書(自動生成、ブラウザで見る)</td><td>不要</td></tr>
+</table>
+</div>
+<p style="font-size:.85rem;color:var(--muted)">* refresh は JWT の代わりにリフレッシュトークン自体が本人確認の材料になります(第3章)。</p>
+
+<h2><span class="no">1-2</span>技術スタック — 何を使って作られているか</h2>
+<p>「スタック」とは、そのプロジェクトが積み上げている技術の組み合わせのこと。面接や業務会話で「Hono + Prisma + PostgreSQL 構成です」のように一言で説明できると強いです。</p>
+<div class="tblwrap">
+<table>
+<tr><th>技術</th><th>分類</th><th>このプロジェクトでの役割</th></tr>
+<tr><td><strong>Node.js 22</strong></td><td>実行環境(ランタイム)</td><td>JavaScript/TypeScript をサーバーで動かす土台</td></tr>
+<tr><td><strong>TypeScript</strong></td><td>言語</td><td>JavaScript に型を付けた言語。型エラーを実行前に検出できる</td></tr>
+<tr><td><strong>Hono</strong></td><td>Web フレームワーク</td><td>「この URL に来たらこの関数を呼ぶ」というルーティングと HTTP 処理の骨組み。Express の現代版と考えてよい</td></tr>
+<tr><td><strong>Zod</strong></td><td>バリデーション</td><td>「email は必須・メール形式」のような入力チェックを宣言的に書く</td></tr>
+<tr><td><strong>@hono/zod-openapi</strong></td><td>API 仕様生成</td><td>Zod スキーマから API 仕様書(OpenAPI)を自動生成する</td></tr>
+<tr><td><strong>Prisma</strong></td><td>ORM</td><td>SQL を直接書かずに TypeScript のメソッドで DB を読み書きする</td></tr>
+<tr><td><strong>PostgreSQL 16</strong></td><td>データベース</td><td>ユーザーデータの保存先。Docker コンテナで起動する</td></tr>
+<tr><td><strong>Argon2id</strong></td><td>暗号(ハッシュ)</td><td>パスワードを復元不能な形で保存する(第3章)</td></tr>
+<tr><td><strong>Pino</strong></td><td>ロガー</td><td>構造化ログ(JSON 形式のログ)を出力する</td></tr>
+<tr><td><strong>Vitest</strong></td><td>テスト</td><td>ユニットテスト・統合テストの実行基盤</td></tr>
+</table>
+</div>
+
+<details class="term"><summary>ORM とは?</summary>
+<p><strong>ORM</strong>(Object-Relational Mapping)は、DB のテーブルをプログラムのオブジェクトに対応付けるライブラリ。<code>SELECT * FROM users WHERE id = 1</code> という SQL の代わりに <code>prisma.user.findUnique({ where: { id: 1 } })</code> と書けます。利点は (1) 型が付く(存在しない列名を書くとコンパイルエラー)、(2) SQL インジェクションを防ぎやすい、の2つです。</p>
+</details>
+<details class="term"><summary>フレームワークとライブラリの違いは?</summary>
+<p>どちらも「他人が書いた再利用可能なコード」ですが、<strong>ライブラリ</strong>は自分のコードから呼び出すもの(Zod など)、<strong>フレームワーク</strong>は逆に自分のコードが呼び出される「骨組み」を提供するもの(Hono)。Hono がリクエストを受けて、登録しておいた自分の関数を呼んでくれます。</p>
+</details>
+
+<h2><span class="no">1-3</span>リクエストの旅 — マクロの地図</h2>
+<p>アプリが <code>GET /users/me</code> を送ってからレスポンスが返るまで、リクエストは次の駅を順番に通ります。<strong>この図がシリーズ全体の地図</strong>です。第2章以降で各駅を拡大していきます。</p>
+
+<div class="flow">
+<div class="lbox" style="--lc:var(--l-db)"><span class="tag">Client</span><br><b>Flutter アプリ</b><small>HTTP リクエストを送る(ヘッダーに認証トークンを添付)</small></div>
+<div class="arr">↓ <small>HTTP (JSON)</small></div>
+<div class="lbox" style="--lc:var(--l-mw)"><span class="tag">Middleware</span><br><b>ミドルウェア群</b> <i style="color:var(--muted);font-size:.8rem">…第2章</i><small>全リクエスト共通の関所。セキュリティヘッダー / CORS / ログ / レート制限 / API バージョン / 認証(JWT 検証)</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-route)"><span class="tag">Route</span><br><b>ルート層</b> <code style="font-size:.75rem">src/routes/</code><small>URL とメソッドを見て担当 Controller へ振り分ける。入出力の形(スキーマ)もここで宣言 → API 仕様書が自動生成される</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-ctrl)"><span class="tag">Controller</span><br><b>コントローラ層</b> <code style="font-size:.75rem">src/controllers/</code><small>リクエストから入力を取り出し、Service を呼び、結果を HTTP レスポンスに変換する「交通整理」役。判断はしない</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-svc)"><span class="tag">Service</span><br><b>サービス層</b> <code style="font-size:.75rem">src/services/</code><small>ビジネスロジックの本体。入力検証、重複チェック、トークン発行などの「判断」はすべてここ</small></div>
+<div class="arr">↓</div>
+<div class="lbox" style="--lc:var(--l-repo)"><span class="tag">Repository</span><br><b>リポジトリ層</b> <code style="font-size:.75rem">src/repositories/</code><small>DB の読み書き「だけ」を担当。Prisma の呼び出しをまとめる</small></div>
+<div class="arr">↓ <small>SQL (Prisma が生成)</small></div>
+<div class="lbox" style="--lc:var(--l-db)"><span class="tag">DB</span><br><b>PostgreSQL</b><small>Docker コンテナで稼働。データの永続化</small></div>
+</div>
+<p>レスポンスは同じ道を逆向きに戻ります。途中でエラーが起きた場合は、どの層からでも例外を投げれば共通の<strong>エラーハンドラー</strong>が統一形式の JSON に変換します(第2章)。</p>
+
+<h2><span class="no">1-4</span>レイヤードアーキテクチャ — なぜ層に分けるのか</h2>
+<p>上の図のように役割ごとに層を分ける設計を<strong>レイヤードアーキテクチャ</strong>と呼びます。業務のバックエンド開発では最も標準的な構成です。分ける理由は主に3つ:</p>
+<div class="tblwrap">
+<table>
+<tr><th>理由</th><th>具体例</th></tr>
+<tr><td><strong>変更に強い</strong></td><td>「DB を PostgreSQL から別の DB に変える」なら Repository 層だけ、「レスポンスの形を変える」なら Controller/Route 層だけ直せばよい</td></tr>
+<tr><td><strong>テストしやすい</strong></td><td>Service 層のテストでは Repository を偽物(モック)に差し替え、DB なしでロジックだけを高速に検証できる(第5章)</td></tr>
+<tr><td><strong>迷子にならない</strong></td><td>「入力チェックのバグ → Service」「SQL が遅い → Repository」のように、直す場所が機械的に決まる</td></tr>
+</table>
+</div>
+<div class="note"><b>覚え方:</b> 依存は常に外側 → 内側の一方向(Route → Controller → Service → Repository)。<strong>内側の層は外側を知らない</strong>(Service は HTTP のことを知らないので、どの窓口からでも再利用できる)。これが崩れると層を分けた意味がなくなります。</div>
+
+<h2><span class="no">1-5</span>ディレクトリマップ</h2>
+<p>層の名前とフォルダ名が1対1で対応しています。<strong>太字</strong>がリクエスト処理の本流(色は 1-3 の地図と同じ層の色)、細字が支える部品です。</p>
+<div class="dirmap" aria-label="ディレクトリ構成">
+<div class="row main"><code>server/</code><span>プロジェクトルート</span></div>
+<div class="row main"><code>├ src/index.ts</code><span>エントリーポイント。サーバーを起動する</span></div>
+<div class="row main"><code>├ src/app.ts</code><span>アプリ本体の組み立て(ミドルウェア・ルート登録)</span></div>
+<div class="row"><code>├ src/types.ts</code><span>共有の型定義(Context に入れる値の型など)</span></div>
+<div class="row main"><code>├ src/routes/</code><span><i class="dot" style="--lc:var(--l-route)"></i>ルート層 — URL 定義 + OpenAPI スキーマ</span></div>
+<div class="row main"><code>├ src/controllers/</code><span><i class="dot" style="--lc:var(--l-ctrl)"></i>コントローラ層 — 入出力の変換</span></div>
+<div class="row main"><code>├ src/services/</code><span><i class="dot" style="--lc:var(--l-svc)"></i>サービス層 — ビジネスロジック</span></div>
+<div class="row main"><code>├ src/repositories/</code><span><i class="dot" style="--lc:var(--l-repo)"></i>リポジトリ層 — DB 操作</span></div>
+<div class="row main"><code>├ src/middlewares/</code><span><i class="dot" style="--lc:var(--l-mw)"></i>ミドルウェア — 認証・ログ・レート制限など</span></div>
+<div class="row"><code>├ src/lib/</code><span>道具箱(JWT・パスワード・エラー・バリデーション)</span></div>
+<div class="row"><code>├ src/config/env.ts</code><span>環境変数の読み込みと起動時検証</span></div>
+<div class="row main"><code>├ prisma/schema.prisma</code><span><i class="dot" style="--lc:var(--l-db)"></i>DB の設計図(テーブル定義)</span></div>
+<div class="row"><code>├ prisma/seed.ts</code><span>開発用の初期データ投入</span></div>
+<div class="row"><code>├ tests/</code><span>ユニットテスト + 統合テスト</span></div>
+<div class="row"><code>├ docker-compose.yml</code><span>PostgreSQL コンテナの定義</span></div>
+<div class="row"><code>├ Makefile</code><span><code style="white-space:nowrap">make up</code> 等の開発コマンド集</span></div>
+<div class="row"><code>└ .env</code><span>環境変数(DB 接続先・秘密鍵。git 管理外)</span></div>
+</div>
+
+<details class="term"><summary>環境変数 / .env とは?</summary>
+<p><strong>環境変数</strong>は、コードの外から渡す設定値。DB の接続先(<code>DATABASE_URL</code>)や署名用の秘密鍵(<code>JWT_SECRET</code>)のように「環境ごとに違う値」「秘密にすべき値」をコードに埋め込まず外出しします。<code>.env</code> ファイルはローカル開発用の環境変数置き場で、<strong>秘密情報を含むため git にコミットしません</strong>(<code>.gitignore</code> 済み)。このプロジェクトは <code>src/config/env.ts</code> が起動時に Zod で検証し、設定漏れがあれば即座に終了します(fail-fast)。</p>
+</details>
+
+<h2><span class="no">1-6</span>起動の流れ — index.ts と app.ts</h2>
+<p>プログラムの入口(<strong>エントリーポイント</strong>)は <code>src/index.ts</code> です。わずか 28 行で、やることは「app.ts で組み立てたアプリを、ポート 3000 で待ち受けさせる」だけ。</p>
+<figure class="code"><figcaption>src/index.ts(抜粋)</figcaption><pre><code><span class="c">// 実機・エミュレータからも到達できるよう全インターフェイスで待ち受ける。</span>
+const server = serve({ fetch: app.fetch, port: env.PORT, hostname: '0.0.0.0' });
+
+<span class="c">// SIGTERM を受けたら新規受付を止め、処理中のリクエストを完了させてから終了する。</span>
+process.on('SIGTERM', () =&gt; shutdown('SIGTERM'));</code></pre></figure>
+<details class="term"><summary>グレースフルシャットダウンとは?</summary>
+<p>サーバーを止めるとき、処理中のリクエストを完了させてから終了する作法。デプロイやスケールイン(サーバー台数を減らすこと)の際、基盤(Cloud Run や k8s)は <code>SIGTERM</code> というシグナルを送ってきます。これを無視して即死すると、その瞬間に処理中だったユーザーにエラーが返ってしまう。<code>server.close()</code> で新規受付を止めて待ち、保険として10秒で強制終了する実装になっています。</p>
+</details>
+<p>一方 <code>src/app.ts</code> はアプリの<strong>組み立て図</strong>です。ミドルウェアの適用順、ルートの登録、エラーハンドラーの設定がすべてここに書かれており、<strong>迷ったらまず app.ts を読む</strong>のがこのプロジェクトの読み方です。詳細は第2章で1行ずつ追います。</p>
+
+<h2><span class="no">1-7</span>開発環境の動かし方</h2>
+<p>開発時の全体像はこうなっています: アプリ本体は <code>tsx watch</code>(ファイル保存で自動再起動)でローカル実行、DB だけ Docker で動かします。</p>
+<div class="tblwrap">
+<table>
+<tr><th>コマンド</th><th>やること</th></tr>
+<tr><td><code>make up</code></td><td>初回セットアップ込みの一発起動。DB 起動 → マイグレーション適用 → 初回ならシード投入 → 開発サーバー起動</td></tr>
+<tr><td><code>make down</code></td><td>DB コンテナ停止(データは保持)</td></tr>
+<tr><td><code>make test</code></td><td>DB を起動してからテスト実行</td></tr>
+<tr><td><code>make studio</code></td><td>Prisma Studio(DB の中身を GUI で見るツール)</td></tr>
+<tr><td><code>make migrate</code></td><td>スキーマ変更を DB に反映(第5章)</td></tr>
+</table>
+</div>
+<p>起動後にブラウザで <code>http://localhost:3000/reference</code> を開くと、コードから自動生成された API 仕様書(Scalar UI)が見られます。<strong>このページからそのままリクエストを試せる</strong>ので、動作確認の起点として最初に覚えるべき URL です。</p>
+<details class="term"><summary>シード / マイグレーションとは?</summary>
+<p><strong>マイグレーション</strong>は DB の構造変更(テーブルや列の追加)を SQL ファイルの履歴として管理・適用する仕組み。<strong>シード(seed)</strong>は開発用のテストデータを DB に投入すること(<code>prisma/seed.ts</code>)。どちらも「チームの誰の環境でも同じ DB 状態を再現する」ためにあります。</p>
+</details>
+
+<h2><span class="no">1-8</span>このシリーズの歩き方</h2>
+<p>ここまでで「地図」は手に入りました。残りの章で各エリアを拡大します。</p>
+<div class="tblwrap">
+<table>
+<tr><th>章</th><th>内容</th><th>読むと分かること</th></tr>
+<tr><td><b>第2章</b> ミドルウェア</td><td>app.ts の関所を1つずつ解説</td><td>ログ・CORS・レート制限・エラー処理の設計</td></tr>
+<tr><td><b>第3章</b> 認証のしくみ</td><td>JWT + リフレッシュトークンの2トークン方式</td><td>ログインが「なぜこの作りなのか」</td></tr>
+<tr><td><b>第4章</b> コード読解</td><td><code>GET /users/me</code> と <code>POST /auth/register</code> を全層縦断で読む</td><td>1行レベルでコードが読めるようになる</td></tr>
+<tr><td><b>第5章</b> 機能追加の手順</td><td>新エンドポイント追加の実践手順(9 STEP)</td><td>自分で機能を足せるようになる</td></tr>
+</table>
+</div>
+
+<nav class="series" data-current="1" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<footer class="fin">ibis backend 解説シリーズ 1/5 — コードは 2026-07-07 時点の <code>server/</code> を基に解説しています。</footer>
+</div>

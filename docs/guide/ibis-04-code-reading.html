@@ -1,0 +1,256 @@
+<title>ibis backend 解説 4章 — コード読解</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}}
+:root[data-theme=light]{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+:root[data-theme=dark]{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.eyebrow{font-size:.78rem;letter-spacing:.18em;color:var(--accent);font-weight:600;text-transform:uppercase}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:2rem;line-height:1.45;margin:.4rem 0 .6rem;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 2rem;font-size:.98rem}
+h2{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:1.4rem;line-height:1.5;margin:3.2rem 0 .8rem;padding-top:1.6rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .no{color:var(--accent);font-size:.95rem;display:block;letter-spacing:.12em}
+h3{font-size:1.05rem;margin:2rem 0 .5rem}
+h3 .chip{margin-right:.4rem}
+p{margin:.7rem 0}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.85em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+figure.code{margin:1.2rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+figure.code figcaption{background:var(--code-bg);color:var(--code-file);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.78rem;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.08)}
+figure.code pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:.9rem 1rem;overflow-x:auto;font-size:.8rem;line-height:1.75}
+figure.code pre code{background:none;border:none;padding:0;font-size:1em;color:inherit}
+figure.code .c{color:var(--code-cmt)}
+table{border-collapse:collapse;width:100%;margin:1.1rem 0;font-size:.9rem;line-height:1.7}
+th,td{border:1px solid var(--line);padding:.5rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:.82rem}
+td code{white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--surface);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0;font-size:.92rem}
+.note b:first-child{color:var(--accent)}
+details.term{border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:.55rem .9rem;margin:.8rem 0;font-size:.92rem}
+details.term summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details.term summary::marker{color:var(--muted)}
+details.term[open]{padding-bottom:.8rem}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--lc,var(--accent));border:1px solid currentColor;border-radius:4px;padding:0 .4em;vertical-align:.1em}
+nav.series{display:block;margin:1.6rem 0 0}
+.series-links{display:flex;flex-wrap:wrap;gap:.5rem}
+.series-links a{display:flex;align-items:center;gap:.45rem;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.28rem .85rem .28rem .35rem;font-size:.82rem;background:var(--card)}
+.series-links a b{display:grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--surface);color:var(--muted);font-size:.78rem;font-family:"Hiragino Mincho ProN","Yu Mincho",serif}
+nav[data-current="1"] .p1,nav[data-current="2"] .p2,nav[data-current="3"] .p3,nav[data-current="4"] .p4,nav[data-current="5"] .p5{border-color:var(--accent);color:var(--ink);font-weight:600}
+nav[data-current="1"] .p1 b,nav[data-current="2"] .p2 b,nav[data-current="3"] .p3 b,nav[data-current="4"] .p4 b,nav[data-current="5"] .p5 b{background:var(--accent);color:var(--bg)}
+footer.fin{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:1.2rem;color:var(--muted);font-size:.85rem}
+</style>
+
+<div class="wrap">
+<p class="eyebrow">ibis backend を読み解く — 第4章(全5章)</p>
+<h1>コード読解 — 1つのリクエストを全層縦断で追う</h1>
+<p class="lede">地図(第1章)・関所(第2章)・認証(第3章)を踏まえ、今度は実際のコードを上から下まで読み通します。題材は最小の <code>GET /users/me</code> と、入力を伴う <code>POST /auth/register</code> の2本です。</p>
+
+<nav class="series" data-current="4" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<h2><span class="no">4-1</span>題材① GET /users/me — 最小構成の縦断読み</h2>
+<p>「認証中ユーザー自身のプロフィールを返す」だけのエンドポイント。4層すべてを最短距離で通るので、最初に読むのに最適です。</p>
+
+<h3><span class="chip" style="--lc:var(--l-route)">ROUTE</span>src/routes/userRoutes.ts</h3>
+<figure class="code"><figcaption>src/routes/userRoutes.ts(抜粋)</figcaption><pre><code>export const userRoutes = createOpenAPIApp();
+userRoutes.use('*', apiVersion);  <span class="c">// このルート群は全て Api-Version 必須</span>
+userRoutes.use('*', auth);        <span class="c">// 全て認証必須(/users 配下に共通適用)</span>
+
+const UserResponse = z.object({   <span class="c">// レスポンスの形を Zod で宣言</span>
+  id: z.number().openapi({ example: 1 }),
+  name: z.string().openapi({ example: '山田太郎' }),
+  email: z.string().email().openapi({ example: 'user@example.com' }),
+}).openapi('User');
+
+const getMeRoute = createRoute({  <span class="c">// エンドポイントの「仕様」を定義</span>
+  method: 'get',
+  path: '/me',
+  security: [{ [BEARER_AUTH]: [] }],          <span class="c">// 仕様書に「要認証」と表示</span>
+  request: { headers: apiVersionHeader },
+  responses: {
+    200: { description: 'プロフィール',
+           content: { 'application/json': { schema: UserResponse } } },
+    401: errorResponse('認証失敗'),
+    404: errorResponse('ユーザーが見つからない'),
+  },
+});
+
+userRoutes.openapi(getMeRoute, (c) =&gt; userController.getMe(c)); <span class="c">// 仕様と処理を接続</span></code></pre></figure>
+<p>ルート層のファイルは長く見えますが、実体は「<strong>仕様の宣言</strong>」です。<code>createRoute</code> で書いた内容(パス・入出力の形・エラー)はそのまま OpenAPI 仕様書になり、<code>/reference</code> に自動反映されます。仕様書を別ファイルで手書きしない<strong>コードファースト</strong>方式なので、実装と仕様が絶対にズレません。</p>
+<details class="term"><summary>OpenAPI / Scalar とは?</summary>
+<p><strong>OpenAPI</strong> は REST API の仕様を記述する業界標準フォーマット(旧称 Swagger)。「どんなエンドポイントがあり、何を受け取り何を返すか」を機械可読な JSON で表します(このサーバーでは <code>/doc</code> で配信)。<strong>Scalar</strong> はその JSON を人間向けの綺麗な画面にして <code>/reference</code> で表示する UI ライブラリです。アプリ開発者(Flutter 側)との「仕様のすり合わせ」はこの画面を見ながら行えます。</p>
+</details>
+<p>なお <code>app.ts</code> 側の <code>app.route('/users', userRoutes)</code> により、ここでの <code>path: '/me'</code> は実際には <code>/users/me</code> になります(プレフィックスの合成)。</p>
+
+<h3><span class="chip" style="--lc:var(--l-ctrl)">CONTROLLER</span>src/controllers/userController.ts</h3>
+<figure class="code"><figcaption>src/controllers/userController.ts(抜粋)</figcaption><pre><code>async getMe(c: Context&lt;AppEnv&gt;) {
+  const user = c.get('user');                        <span class="c">// auth ミドルウェアが入れた本人 ID</span>
+  const profile = await userService.getProfile(user.id);  <span class="c">// 判断は Service に丸投げ</span>
+  return c.json(profile, 200);                       <span class="c">// 結果を JSON で返す</span>
+}</code></pre></figure>
+<p>たった3行。Controller の仕事は「Context から入力を取り出す → Service を呼ぶ → 結果を HTTP レスポンスにする」だけで、<strong>判断ロジックを一切持ちません</strong>。この薄さが正常で、Controller が太り始めたら設計が崩れているサインです。</p>
+<details class="term"><summary>Context&lt;AppEnv&gt; の型は何をしている?</summary>
+<p><code>c.get('user')</code> や <code>c.get('logger')</code> のような「Context に載せた値」は、そのままだと型が分かりません。<code>src/types.ts</code> の <code>AppEnv</code> インターフェイスで「Context には requestId: string、logger: Logger、user: { id: number } が入る」と宣言し、<code>Context&lt;AppEnv&gt;</code> と型引数(ジェネリクス)で渡すことで、<code>c.get('user')</code> の戻り値に正しい型が付き、タイポはコンパイルエラーになります。TypeScript プロジェクトの型安全を支える典型パターンです。</p>
+</details>
+
+<h3><span class="chip" style="--lc:var(--l-svc)">SERVICE</span>src/services/userService.ts</h3>
+<figure class="code"><figcaption>src/services/userService.ts(抜粋)</figcaption><pre><code>async getProfile(userId: number): Promise&lt;AuthUser&gt; {
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    throw notFound('ユーザーが見つかりません');   <span class="c">// → errorHandler が 404 に変換</span>
+  }
+  return { id: user.id, name: user.name, email: user.email };  <span class="c">// ★</span>
+}</code></pre></figure>
+<p>★の行が地味に重要です。Repository が返す <code>user</code> には <code>password</code>(ハッシュ)や <code>refreshTokenHash</code> も含まれていますが、<strong>返すフィールドを明示的に選んで詰め直す</strong>ことで秘密情報の漏出を防いでいます。<code>return user</code> と横着すると事故になる、バックエンドの頻出ポイントです。</p>
+
+<h3><span class="chip" style="--lc:var(--l-repo)">REPOSITORY</span>src/repositories/userRepository.ts</h3>
+<figure class="code"><figcaption>src/repositories/userRepository.ts(抜粋)</figcaption><pre><code>findById(id: number) {
+  return prisma.user.findUnique({ where: { id } });
+  <span class="c">// Prisma が SQL に変換: SELECT * FROM users WHERE id = $1 LIMIT 1</span>
+}</code></pre></figure>
+<p>Repository は Prisma 呼び出しの薄いラッパーです。「わざわざ層を挟む意味あるの?」と思うかもしれませんが、(1) テストでこの層だけ偽物に差し替えられる、(2) 「DB アクセスは全部ここ」と場所が確定する、(3) 将来クエリが複雑化しても影響がこの層で止まる、という利点のための投資です。</p>
+
+<h3><span class="chip" style="--lc:var(--l-db)">DB</span>prisma/schema.prisma</h3>
+<figure class="code"><figcaption>prisma/schema.prisma</figcaption><pre><code>model User {
+  id                    Int       @id @default(autoincrement())  <span class="c">// 主キー、自動連番</span>
+  email                 String    @unique                        <span class="c">// 一意制約</span>
+  password              String                                   <span class="c">// Argon2id ハッシュ</span>
+  name                  String
+  refreshTokenHash      String?   @map("refresh_token_hash")     <span class="c">// ? = NULL 許可</span>
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  @@index([refreshTokenHash])  <span class="c">// refresh 時の検索を高速化する索引</span>
+  @@map("users")               <span class="c">// テーブル名は複数形 users にマッピング</span>
+}</code></pre></figure>
+<p><code>@map</code> は「TypeScript ではキャメルケース(<code>refreshTokenHash</code>)、DB ではスネークケース(<code>refresh_token_hash</code>)」という両者の命名規約を橋渡しする指定です。このファイルを変更したら<strong>マイグレーション</strong>で DB に反映します(手順は第5章)。</p>
+
+<h2><span class="no">4-2</span>題材② POST /auth/register — 入力があるパターン</h2>
+<p>今度は「クライアントから JSON ボディを受け取る」エンドポイント。追加で登場するのは<strong>入力検証(バリデーション)</strong>です。</p>
+
+<h3><span class="chip" style="--lc:var(--l-svc)">SERVICE</span>Zod スキーマと validate()</h3>
+<figure class="code"><figcaption>src/services/authService.ts(抜粋)</figcaption><pre><code>export const registerSchema = z.object({
+  name: z.string().min(1, '名前を入力してください'),
+  email: z.string().email('メールアドレスの形式が正しくありません'),
+  password: z.string().min(8, '8文字以上で入力してください'),
+});
+
+async register(input: unknown): Promise&lt;LoginResult&gt; {
+  <span class="c">// ① 検証。失敗なら VALIDATION_ERROR(400) が throw される</span>
+  const { name, email, password } = validate(registerSchema, input);
+
+  <span class="c">// ② 業務ルール: メール重複は許さない</span>
+  const existing = await userRepository.findByEmail(email);
+  if (existing) throw conflict({ email: 'このメールアドレスは既に登録されています' });
+
+  <span class="c">// ③ パスワードはハッシュ化してから保存(第3章)</span>
+  const user = await userRepository.create({
+    name, email, password: await hashPassword(password),
+  });
+
+  return issueSession(user);  <span class="c">// ④ トークン発行 = 自動ログイン(第3章)</span>
+}</code></pre></figure>
+<p>引数が <code>input: unknown</code> になっているのに注目してください。「外から来たデータは何が入っているか分からない」という前提を型で表現し、<code>validate()</code> を通って初めて <code>{ name, email, password }</code> という信頼できる型になります。<strong>境界で検証し、内側は信頼する</strong>——バックエンドの基本原則です。</p>
+<details class="term"><summary>Zod とは? 宣言的バリデーションの利点</summary>
+<p><strong>Zod</strong> は「データの形」をコードで宣言するライブラリ。<code>z.string().email()</code> のようにルールを繋げて書きます。利点は (1) 検証ロジックの if 文の山を書かなくてよい、(2) スキーマから TypeScript の型を自動で導ける(<code>z.infer</code>)、(3) このプロジェクトでは OpenAPI 仕様書の生成にも同じスキーマを使い回せる、の3点。<strong>1つの定義が「検証・型・仕様書」の3役</strong>を兼ねる、このプロジェクトの背骨です。</p>
+</details>
+<div class="note"><b>エラーの一貫性:</b> <code>validate()</code>(<code>src/lib/validation.ts</code>)は Zod の失敗を <code>{ code: 'VALIDATION_ERROR', detail: { email: 'メールアドレスの形式が…' } }</code> という<strong>フィールド名 → メッセージ</strong>の形に変換します。ルート層の <code>createOpenAPIApp()</code>(<code>src/lib/openapi.ts</code>)の defaultHook も同じ変換を使うため、どこで検証に落ちてもアプリ側は同じ形式のエラーを受け取れます。アプリはこれをそのままフォームのエラーメッセージ表示に使えます。</div>
+
+<h3>実際のリクエストとレスポンス</h3>
+<figure class="code"><figcaption>curl での動作確認</figcaption><pre><code>$ curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" -H "Api-Version: 1" \
+  -d '{"name":"山田太郎","email":"taro@example.com","password":"password123"}'
+
+<span class="c"># 201 Created</span>
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",      <span class="c">← アクセストークン(15分)</span>
+  "refreshToken": "3xk9dK...",             <span class="c">← リフレッシュトークン(30日)</span>
+  "id": 1, "name": "山田太郎", "email": "taro@example.com"
+}
+
+<span class="c"># 入力が不正なら 400</span>
+{ "code": "VALIDATION_ERROR", "detail": { "password": "8文字以上で入力してください" } }</code></pre></figure>
+
+<h2><span class="no">4-3</span>支える部品たち — lib/ と config/</h2>
+<p>本流の4層を支える「道具箱」も、役割さえ掴めば怖くありません。</p>
+<div class="tblwrap">
+<table>
+<tr><th>ファイル</th><th>役割</th><th>詳しくは</th></tr>
+<tr><td><code>lib/prisma.ts</code></td><td>PrismaClient を1個だけ生成して全体で共有(接続の使い回し)</td><td>—</td></tr>
+<tr><td><code>lib/errors.ts</code></td><td>AppError と unauthorized() 等のヘルパー</td><td>第2章</td></tr>
+<tr><td><code>lib/validation.ts</code></td><td>Zod 検証 → VALIDATION_ERROR 変換</td><td>本章 4-2</td></tr>
+<tr><td><code>lib/jwt.ts</code> / <code>lib/password.ts</code> / <code>lib/refreshToken.ts</code></td><td>トークン・パスワードの暗号まわり</td><td>第3章</td></tr>
+<tr><td><code>lib/openapi.ts</code></td><td>ルート定義の共通部品(エラー形式・Api-Version ヘッダー・Bearer 認証の宣言)</td><td>本章 4-1</td></tr>
+<tr><td><code>lib/logger.ts</code></td><td>Pino ロガー。開発時は色付き表示 + 日次ファイル、本番は JSON を標準出力へ</td><td>第2章</td></tr>
+<tr><td><code>config/env.ts</code></td><td>環境変数を起動時に Zod で検証。本番で弱い JWT_SECRET なら起動拒否</td><td>—</td></tr>
+</table>
+</div>
+<div class="note"><b>config/env.ts の fail-fast 思想:</b> 設定ミスは「動き出してから変なエラー」になると原因究明が大変です。起動の瞬間に全環境変数を検証して、ダメなら理由を表示して即終了(<code>process.exit(1)</code>)。<strong>壊れているなら早く・大きな音で壊れろ</strong>という運用の知恵で、業務でも必ず見る形です。</div>
+
+<h2><span class="no">4-4</span>テストコードの読み方</h2>
+<p><code>tests/</code> には2種類のテストがあり、狙いが異なります。</p>
+<div class="tblwrap">
+<table>
+<tr><th></th><th>ユニットテスト</th><th>統合テスト</th></tr>
+<tr><td>場所</td><td><code>tests/services/*.test.ts</code></td><td><code>tests/routes/*.test.ts</code></td></tr>
+<tr><td>対象</td><td>Service 層のロジック単体</td><td>HTTP → 全層 → 実 DB の通し</td></tr>
+<tr><td>DB</td><td>使わない(<code>vi.mock</code> で Repository を偽物化)</td><td>使う(Postgres の <code>test</code> スキーマ。開発データとは分離)</td></tr>
+<tr><td>速度</td><td>速い(ミリ秒)</td><td>遅め(DB 起動が必要 = <code>make test</code>)</td></tr>
+<tr><td>検証すること</td><td>「重複メールなら CONFLICT を投げる」等の判断</td><td>「register を叩くと 201 が返り、DB にハッシュ化パスワードが入る」等の結線</td></tr>
+</table>
+</div>
+<figure class="code"><figcaption>tests/routes/auth.test.ts(抜粋)— 統合テストの雰囲気</figcaption><pre><code>const res = await post('/auth/register', TEST_USER);
+expect(res.status).toBe(201);
+
+<span class="c">// パスワードが平文で保存されていないことまで検証している</span>
+const row = await prisma.user.findUnique({ where: { email: TEST_USER.email } });
+expect(row?.password).toMatch(/^\$argon2/);</code></pre></figure>
+<details class="term"><summary>モック(vi.mock)とは?</summary>
+<p><strong>モック</strong>は本物の代わりに使う「偽物の部品」。<code>vi.mock('../repositories/userRepository.js')</code> と書くと、テスト中は Repository の全関数が偽物になり、<code>mockResolvedValue(...)</code> で「この関数はこの値を返すことにする」と台本を与えられます。DB なしで「ユーザーが存在しない場合」「重複している場合」など任意の状況を再現できるのが強みです。</p>
+</details>
+<p>最終章では、この知識を総動員して「新しいエンドポイントを自分で追加する」手順を身につけます。</p>
+
+<nav class="series" data-current="4" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<footer class="fin">ibis backend 解説シリーズ 4/5 — コードは 2026-07-07 時点の <code>server/</code> を基に解説しています。</footer>
+</div>

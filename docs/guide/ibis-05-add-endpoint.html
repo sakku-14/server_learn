@@ -1,0 +1,249 @@
+<title>ibis backend 解説 5章 — 機能追加の手順</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}}
+:root[data-theme=light]{
+  --bg:#FAF7F7;--surface:#F2ECED;--card:#FFFFFF;--line:#E4DADC;
+  --ink:#282124;--muted:#6F6167;--accent:#AC4159;--accent-soft:#F7E6EA;
+  --code-bg:#251E21;--code-ink:#EBE4E1;--code-cmt:#9C8B91;--code-file:#D9A9B4;
+  --l-mw:#AC4159;--l-route:#39678F;--l-ctrl:#2E6F67;--l-svc:#8A6320;--l-repo:#6A5A9C;--l-db:#5D5755;
+}
+:root[data-theme=dark]{
+  --bg:#1D191B;--surface:#262023;--card:#2C2528;--line:#3D3438;
+  --ink:#EDE7E6;--muted:#A69AA0;--accent:#E1839A;--accent-soft:#3D2530;
+  --code-bg:#211B1E;--code-ink:#E7E0DD;--code-cmt:#94848B;--code-file:#D9A9B4;
+  --l-mw:#E1839A;--l-route:#84AACB;--l-ctrl:#7CB5AC;--l-svc:#C9A25E;--l-repo:#A796D3;--l-db:#A29B98;
+}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.eyebrow{font-size:.78rem;letter-spacing:.18em;color:var(--accent);font-weight:600;text-transform:uppercase}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:2rem;line-height:1.45;margin:.4rem 0 .6rem;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 2rem;font-size:.98rem}
+h2{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:600;font-size:1.4rem;line-height:1.5;margin:3.2rem 0 .8rem;padding-top:1.6rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .no{color:var(--accent);font-size:.95rem;display:block;letter-spacing:.12em}
+h3{font-size:1.05rem;margin:2rem 0 .5rem}
+h3 .chip{margin-right:.4rem}
+p{margin:.7rem 0}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.85em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+figure.code{margin:1.2rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+figure.code figcaption{background:var(--code-bg);color:var(--code-file);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.78rem;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.08)}
+figure.code pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:.9rem 1rem;overflow-x:auto;font-size:.8rem;line-height:1.75}
+figure.code pre code{background:none;border:none;padding:0;font-size:1em;color:inherit}
+figure.code .c{color:var(--code-cmt)}
+table{border-collapse:collapse;width:100%;margin:1.1rem 0;font-size:.9rem;line-height:1.7}
+th,td{border:1px solid var(--line);padding:.5rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:.82rem}
+td code{white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--surface);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0;font-size:.92rem}
+.note b:first-child{color:var(--accent)}
+details.term{border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:.55rem .9rem;margin:.8rem 0;font-size:.92rem}
+details.term summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details.term summary::marker{color:var(--muted)}
+details.term[open]{padding-bottom:.8rem}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--lc,var(--accent));border:1px solid currentColor;border-radius:4px;padding:0 .4em;vertical-align:.1em}
+.step{display:flex;gap:.9rem;margin:1.4rem 0;align-items:flex-start}
+.step .n{flex:0 0 2.1rem;height:2.1rem;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--bg);font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:1rem;font-weight:600;margin-top:.2rem}
+.step .body{flex:1;min-width:0}
+.step h3{margin:0 0 .3rem}
+nav.series{display:block;margin:1.6rem 0 0}
+.series-links{display:flex;flex-wrap:wrap;gap:.5rem}
+.series-links a{display:flex;align-items:center;gap:.45rem;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.28rem .85rem .28rem .35rem;font-size:.82rem;background:var(--card)}
+.series-links a b{display:grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--surface);color:var(--muted);font-size:.78rem;font-family:"Hiragino Mincho ProN","Yu Mincho",serif}
+nav[data-current="1"] .p1,nav[data-current="2"] .p2,nav[data-current="3"] .p3,nav[data-current="4"] .p4,nav[data-current="5"] .p5{border-color:var(--accent);color:var(--ink);font-weight:600}
+nav[data-current="1"] .p1 b,nav[data-current="2"] .p2 b,nav[data-current="3"] .p3 b,nav[data-current="4"] .p4 b,nav[data-current="5"] .p5 b{background:var(--accent);color:var(--bg)}
+footer.fin{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:1.2rem;color:var(--muted);font-size:.85rem}
+</style>
+
+<div class="wrap">
+<p class="eyebrow">ibis backend を読み解く — 第5章(全5章)</p>
+<h1>機能追加の手順 — 新しいエンドポイントを自分で作る</h1>
+<p class="lede">仕上げは実践です。「ユーザーに電話番号(phone)を追加する」を題材に、要件整理からコミットまでの 9 STEP を通します。リポジトリ内の <code>.claude/DEVELOPMENT_WORKFLOW.md</code> にも同じ流れの詳細版があるので、実作業ではそちらを開きながら進めてください。</p>
+
+<nav class="series" data-current="5" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<h2><span class="no">5-1</span>鉄則 — 内側から外側へ</h2>
+<p>実装順は毎回同じです: <strong>DB(schema)→ Repository → Service → Controller → Route</strong>。呼ばれる側(内側)を先に作れば、外側を書くときには呼ぶ相手が常に存在し、「まだ無い関数を呼ぶ」宙ぶらりんな状態が生まれません。</p>
+<div class="note"><b>どの層を触るかの見極め(設計チェックリスト):</b><br>
+・新しいデータを DB に保存する? → <code>schema.prisma</code> + マイグレーション<br>
+・DB を読み書きする? → Repository に関数追加<br>
+・入力を受け取る / 判断ロジックがある? → Service(Zod スキーマ + 処理)<br>
+・新しい URL が増える? → Controller + Route(<code>createRoute</code>)<br>
+・認証が必要? → 既存の <code>auth</code> ミドルウェアが付くルート群に置くだけ(<code>/users</code> 配下なら自動)</div>
+<p>パターン別の触る範囲はこうなります:</p>
+<div class="tblwrap">
+<table>
+<tr><th>やりたいこと</th><th>schema</th><th>Repository</th><th>Service</th><th>Controller/Route</th></tr>
+<tr><td>既存データを返すだけの GET</td><td>—</td><td>△(既存流用可)</td><td>✅</td><td>✅</td></tr>
+<tr><td>既存レスポンスに項目を足す</td><td>—</td><td>—</td><td>✅(戻り値に追加)</td><td>✅(スキーマに追加)</td></tr>
+<tr><td>新しいデータを保存する(今回の phone)</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+</table>
+</div>
+
+<h2><span class="no">5-2</span>9 STEP ウォークスルー</h2>
+
+<div class="step"><div class="n">0</div><div class="body">
+<h3>準備 — 環境とブランチ</h3>
+<figure class="code"><figcaption>terminal</figcaption><pre><code>nvm use                        <span class="c"># Node を .nvmrc の 22 に合わせる</span>
+docker compose up -d           <span class="c"># DB を起動</span>
+git switch -c feat/user-phone  <span class="c"># main を直接触らず作業ブランチを切る</span></code></pre></figure>
+<p>ブランチ名は <code>feat/内容</code>(新機能)、<code>fix/内容</code>(バグ修正)が慣習です。</p>
+</div></div>
+
+<div class="step"><div class="n">1</div><div class="body">
+<h3>要件を言葉にする(コードを書かない)</h3>
+<p>「何を・誰が・どの窓口で・入力と出力・入力ルール・エラー」を一覧にします。今回: ログイン済み本人が <code>PATCH /users/me</code> で <code>{ "phone": "09012345678" }</code> を送ると更新後プロフィールが返る。phone は10〜11桁の数字。不正なら400、未ログインなら401。</p>
+<details class="term"><summary>PATCH と PUT の使い分け</summary><p>更新系メソッドのうち、<strong>PATCH</strong> は一部のフィールドだけの更新、<strong>PUT</strong> はリソース全体の置き換え。今回は phone だけ変えるので PATCH。この HTTP の慣習に沿うと、API の利用者が仕様を推測しやすくなります。</p></details>
+</div></div>
+
+<div class="step"><div class="n">2</div><div class="body">
+<h3>設計 — 触る層を確定する</h3>
+<p>5-1 のチェックリストに当てると、今回は「新しいデータを保存する」ので<strong>全層 + マイグレーション + テスト</strong>。ここで地図を描いておけば、あとは順に埋めるだけです。</p>
+</div></div>
+
+<div class="step"><div class="n">3</div><div class="body">
+<h3><span class="chip" style="--lc:var(--l-db)">DB</span>schema.prisma を編集 → マイグレーション</h3>
+<figure class="code"><figcaption>prisma/schema.prisma(User モデルに1行)</figcaption><pre><code>phone  String?  @map("phone")   <span class="c">// ? = NULL 許可。既存ユーザーに値が無くても大丈夫</span></code></pre></figure>
+<figure class="code"><figcaption>terminal</figcaption><pre><code>npx prisma migrate dev --name add_user_phone</code></pre></figure>
+<p>このコマンド1つで「変更 SQL の生成 → DB へ適用 → Prisma Client の型再生成」まで完了します。<code>?</code> を忘れると既存行に値が無くてマイグレーションが失敗するので注意。</p>
+</div></div>
+
+<div class="step"><div class="n">4</div><div class="body">
+<h3><span class="chip" style="--lc:var(--l-repo)">REPOSITORY</span>DB 操作を1つ足す</h3>
+<figure class="code"><figcaption>src/repositories/userRepository.ts に追加</figcaption><pre><code>updatePhone(id: number, phone: string) {
+  return prisma.user.update({ where: { id }, data: { phone } });
+}</code></pre></figure>
+<p>Repository には判断を書かない(第4章)。既存関数の書式をそのまま真似ればOK。</p>
+</div></div>
+
+<div class="step"><div class="n">5</div><div class="body">
+<h3><span class="chip" style="--lc:var(--l-svc)">SERVICE</span>Zod スキーマ + ロジック</h3>
+<figure class="code"><figcaption>src/services/userService.ts に追加</figcaption><pre><code>export const updatePhoneSchema = z.object({
+  phone: z.string().regex(/^\d{10,11}$/, '電話番号は10〜11桁の数字で入力してください'),
+});
+
+async updatePhone(userId: number, input: unknown) {
+  const { phone } = validate(updatePhoneSchema, input);  <span class="c">// 不正なら 400 が飛ぶ</span>
+  const user = await userRepository.findById(userId);
+  if (!user) throw notFound('ユーザーが見つかりません');
+  const updated = await userRepository.updatePhone(userId, phone);
+  return { id: updated.id, name: updated.name, email: updated.email, phone: updated.phone };
+}</code></pre></figure>
+<p>入力ルール(10〜11桁)はアプリ固有のビジネスルールなので Service に置きます。戻り値は必要なフィールドだけ詰め直す(password 等を漏らさない)。</p>
+</div></div>
+
+<div class="step"><div class="n">6</div><div class="body">
+<h3><span class="chip" style="--lc:var(--l-ctrl)">CONTROLLER</span>+<span class="chip" style="--lc:var(--l-route)">ROUTE</span>窓口を開ける</h3>
+<figure class="code"><figcaption>src/controllers/userController.ts に追加</figcaption><pre><code>async updateMe(c: Context&lt;AppEnv&gt;) {
+  const user = c.get('user');
+  const body = await c.req.json().catch(() =&gt; ({}));
+  const profile = await userService.updatePhone(user.id, body);
+  return c.json(profile, 200);
+}</code></pre></figure>
+<figure class="code"><figcaption>src/routes/userRoutes.ts に追加</figcaption><pre><code>const patchMeRoute = createRoute({
+  method: 'patch', path: '/me', tags: ['User'], summary: '電話番号を更新',
+  security: [{ [BEARER_AUTH]: [] }],
+  request: {
+    headers: apiVersionHeader,
+    body: { content: { 'application/json': { schema: UpdatePhoneRequest } } },
+  },
+  responses: {
+    200: { description: '更新後のプロフィール',
+           content: { 'application/json': { schema: UserResponse } } },
+    400: errorResponse('バリデーションエラー'),
+    401: errorResponse('認証失敗'),
+    404: errorResponse('ユーザーが見つからない'),
+  },
+});
+userRoutes.openapi(patchMeRoute, (c) =&gt; userController.updateMe(c));  <span class="c">// ★接続を忘れずに</span></code></pre></figure>
+<p><code>userRoutes</code> は冒頭で <code>auth</code> を通しているので、この窓口も<strong>自動的に認証必須</strong>になります。<code>createRoute</code> を書いた時点で <code>/reference</code> の仕様書にも自動反映(手作業ゼロ)。</p>
+</div></div>
+
+<div class="step"><div class="n">7</div><div class="body">
+<h3>テストを書く → 動作確認</h3>
+<figure class="code"><figcaption>tests/services/userService.test.ts に追加(ユニット)</figcaption><pre><code>it('桁数が不正なら VALIDATION_ERROR を投げる', async () =&gt; {
+  await expect(userService.updatePhone(1, { phone: '123' }))
+    .rejects.toMatchObject({ code: 'VALIDATION_ERROR', status: 400 });
+});</code></pre></figure>
+<p>カバーすべき最低ライン: 正常系 / 形式不正(400) / ユーザー不在(404)。<code>npm test</code> が全部通ったら、実際に動かして curl で確認します。</p>
+<figure class="code"><figcaption>terminal(動作確認)</figcaption><pre><code>npm run dev   <span class="c"># サーバー起動</span>
+
+<span class="c"># ログインして token を取得してから:</span>
+curl -X PATCH http://localhost:3000/users/me \
+  -H "Content-Type: application/json" -H "Api-Version: 1" \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -d '{"phone":"09012345678"}'</code></pre></figure>
+</div></div>
+
+<div class="step"><div class="n">8</div><div class="body">
+<h3>整える — lint / format / 型チェック</h3>
+<figure class="code"><figcaption>terminal</figcaption><pre><code>npm run lint && npm run format && npx tsc --noEmit</code></pre></figure>
+<p>コミット前の身だしなみ。書き方のばらつきをツールで機械的に揃えることで、レビューが本質に集中できます。</p>
+</div></div>
+
+<div class="step"><div class="n">9</div><div class="body">
+<h3>コミット & PR</h3>
+<figure class="code"><figcaption>terminal</figcaption><pre><code>git add -A
+git commit -m "feat: ユーザーに電話番号(phone)を追加"
+git push -u origin feat/user-phone   <span class="c"># → GitHub で PR を作成</span></code></pre></figure>
+<p>コミットメッセージは <code>feat:</code>(新機能)/ <code>fix:</code>(修正)/ <code>refactor:</code>(内部改善)/ <code>test:</code> / <code>docs:</code> の接頭辞を付ける慣習(Conventional Commits)。PR は「電話番号の追加」のような<strong>意味のある最小単位</strong>で出すとレビューが速く安全です。</p>
+</div></div>
+
+<h2><span class="no">5-3</span>よくある詰まりどころ</h2>
+<div class="tblwrap">
+<table>
+<tr><th>症状</th><th>原因</th><th>対処</th></tr>
+<tr><td>401 Unauthorized</td><td>Bearer トークンの付け忘れ / 別端末での再ログインで旧トークンが無効化(後勝ち方式、第3章)</td><td>直前にログインし直して得た token を使う</td></tr>
+<tr><td>400(Api-Version エラー)</td><td><code>Api-Version: 1</code> ヘッダーの付け忘れ</td><td><code>/health</code> 以外の全リクエストに必須</td></tr>
+<tr><td>型エラー / DB に反映されない</td><td>マイグレーション未実行</td><td><code>npx prisma migrate dev --name ...</code></td></tr>
+<tr><td>仕様書に新窓口が出ない</td><td><code>.openapi(route, handler)</code> の接続忘れ</td><td>Route ファイル末尾の接続行を確認</td></tr>
+<tr><td>429 が返る</td><td>レートリミット(認証系は毎分10回)</td><td>1分待つ。連打スクリプトに注意</td></tr>
+<tr><td>起動時に環境変数エラー</td><td><code>.env</code> 不足</td><td><code>make up</code> なら自動生成される。<code>DATABASE_URL</code> / <code>JWT_SECRET</code> を確認</td></tr>
+</table>
+</div>
+
+<h2><span class="no">5-4</span>卒業チェックリスト</h2>
+<p>以下に全部 Yes と答えられたら、このコードベースは「理解した」と言えます。</p>
+<ul>
+<li>リクエストが通る層の順番と、各層の責務を説明できる(第1章)</li>
+<li><code>app.ts</code> のミドルウェアの並び順の意図を説明できる(第2章)</li>
+<li>「なぜトークンが2種類か」「なぜ DB にはハッシュを保存するか」を説明できる(第3章)</li>
+<li><code>GET /users/me</code> のコードを Route から DB まで指でなぞれる(第4章)</li>
+<li>新しいエンドポイントを、内側から順に自力で追加できる(この章)</li>
+</ul>
+<div class="note"><b>次の一歩:</b> 実際に手を動かすのが最速です。この章の phone 追加をそのまま写経するか、「自分のアプリに必要な次の機能」を STEP 1 の要件表に書くところから始めてください。実装で迷ったら <code>.claude/DEVELOPMENT_WORKFLOW.md</code>(詳細版)と、既存コードの「同じ形の場所」を真似るのが正解です。</div>
+
+<nav class="series" data-current="5" aria-label="シリーズ目次">
+<div class="series-links">
+<a class="p1" href="https://claude.ai/code/artifact/b4ac01db-c080-4ec5-a2c5-132aa9ed0402"><b>1</b><span>全体像</span></a>
+<a class="p2" href="https://claude.ai/code/artifact/1575af00-5eeb-4b0f-bd0c-d8d3b738a057"><b>2</b><span>ミドルウェア</span></a>
+<a class="p3" href="https://claude.ai/code/artifact/dca6d74b-4334-4e67-8344-e20314954fff"><b>3</b><span>認証のしくみ</span></a>
+<a class="p4" href="https://claude.ai/code/artifact/00f56ed4-953b-4022-9df0-c800e780d800"><b>4</b><span>コード読解</span></a>
+<a class="p5" href="https://claude.ai/code/artifact/73befabd-b9b0-4ffa-953b-318d45d85daf"><b>5</b><span>機能追加の手順</span></a>
+</div>
+</nav>
+
+<footer class="fin">ibis backend 解説シリーズ 5/5 — コードは 2026-07-07 時点の <code>server/</code> を基に解説しています。</footer>
+</div>

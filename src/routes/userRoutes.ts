@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { userController } from '../controllers/userController.js';
+import { updateProfileSchema } from '../services/userService.js';
 import { apiVersion } from '../middlewares/apiVersion.js';
 import { auth } from '../middlewares/auth.js';
 import { apiVersionHeader, BEARER_AUTH, createOpenAPIApp, errorResponse } from '../lib/openapi.js';
@@ -35,6 +36,31 @@ const getMeRoute = createRoute({
   },
 });
 
+const UpdateProfileRequest = updateProfileSchema.openapi('UpdateProfileRequest');
+
+const updateMeRoute = createRoute({
+  method: 'patch',
+  path: '/me',
+  tags: ['User'],
+  summary: 'プロフィール更新',
+  description:
+    '認証中ユーザーの名前を更新し、更新後のプロフィールを返す。name は前後の空白を除去したうえで 1〜50 文字。',
+  security: [{ [BEARER_AUTH]: [] }],
+  request: {
+    headers: apiVersionHeader,
+    body: { content: { 'application/json': { schema: UpdateProfileRequest } } },
+  },
+  responses: {
+    200: {
+      description: '更新後のプロフィール',
+      content: { 'application/json': { schema: UserResponse } },
+    },
+    400: errorResponse('バリデーションエラー'),
+    401: errorResponse('認証失敗'),
+    404: errorResponse('ユーザーが見つからない'),
+  },
+});
+
 const deleteMeRoute = createRoute({
   method: 'delete',
   path: '/me',
@@ -51,4 +77,5 @@ const deleteMeRoute = createRoute({
 });
 
 userRoutes.openapi(getMeRoute, (c) => userController.getMe(c));
+userRoutes.openapi(updateMeRoute, (c) => userController.updateMe(c));
 userRoutes.openapi(deleteMeRoute, (c) => userController.deleteMe(c));

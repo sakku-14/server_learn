@@ -29,6 +29,10 @@ export const userRepository = {
     });
   },
 
+  updateName(id: number, name: string) {
+    return prisma.user.update({ where: { id }, data: { name } });
+  },
+
   deleteById(id: number) {
     return prisma.user.delete({ where: { id } });
   },

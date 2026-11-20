@@ -1,7 +1,7 @@
 # app backend
 
 スマホアプリ(iOS)向けのバックエンド API。
-新規登録 / ログイン / トークン再発行 / ログアウト / プロフィール確認 / 退会 の機能を提供する。
+新規登録 / ログイン / トークン再発行 / ログアウト / プロフィール確認・名前変更 / 退会 の機能を提供する。
 
 設計の詳細は [`project-context.md`](./project-context.md) を参照。
 
@@ -332,6 +332,7 @@ API 仕様書はコードから自動生成される。サーバー起動後、�
 | POST | `/auth/refresh` | 不要* | リフレッシュトークンでアクセストークンを再発行 |
 | POST | `/auth/logout` | 必要 | ログアウト・リフレッシュトークン破棄 |
 | GET | `/users/me` | 必要 | プロフィール取得 |
+| PATCH | `/users/me` | 必要 | プロフィール更新 (名前の変更) |
 | DELETE | `/users/me` | 必要 | 退会・ユーザー削除 (そのユーザーの投稿も削除) |
 | GET | `/posts/{id}` | 必要 | 投稿詳細取得 |
 
@@ -389,6 +390,14 @@ curl -X POST http://localhost:3000/auth/refresh \
 curl http://localhost:3000/users/me \
   -H "Api-Version: 1" \
   -H "Authorization: Bearer <TOKEN>"
+
+# プロフィール更新 (名前の変更。前後の空白は除去され、1〜50 文字)
+curl -X PATCH http://localhost:3000/users/me \
+  -H "Content-Type: application/json" \
+  -H "Api-Version: 1" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"name":"新しい名前"}'
+# => {"id":1,"name":"新しい名前","email":"test1@example.com"}
 
 # ログアウト
 curl -X POST http://localhost:3000/auth/logout \

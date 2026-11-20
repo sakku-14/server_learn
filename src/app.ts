@@ -10,6 +10,7 @@ import { globalRateLimit } from './middlewares/rateLimit.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { authRoutes } from './routes/authRoutes.js';
 import { userRoutes } from './routes/userRoutes.js';
+import { postRoutes } from './routes/postRoutes.js';
 import type { AppEnv } from './types.js';
 
 export const app = new OpenAPIHono<AppEnv>();
@@ -57,6 +58,7 @@ app.use('*', globalRateLimit);
 
 app.route('/auth', authRoutes);
 app.route('/users', userRoutes);
+app.route('/posts', postRoutes);
 
 // Bearer (JWT) 認証スキームを登録する。各 protected ルートの security で参照される。
 app.openAPIRegistry.registerComponent('securitySchemes', BEARER_AUTH, {

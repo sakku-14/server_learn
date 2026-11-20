@@ -214,6 +214,9 @@ npm run db:seed
 | 2 | テストユーザー2 | test2@example.com | password123 |
 | 3 | テストユーザー3 | test3@example.com | password123 |
 
+あわせて投稿 (`posts`) が 4 件投入される (id=1〜4、投稿者は上記ユーザー。id=4 は `tags` が空配列)。
+アプリは現在 `GET /posts/1` を固定で呼ぶため、id=1 は削除しないこと。
+
 ### 7. サーバー起動
 
 ```bash
@@ -329,7 +332,8 @@ API 仕様書はコードから自動生成される。サーバー起動後、�
 | POST | `/auth/refresh` | 不要* | リフレッシュトークンでアクセストークンを再発行 |
 | POST | `/auth/logout` | 必要 | ログアウト・リフレッシュトークン破棄 |
 | GET | `/users/me` | 必要 | プロフィール取得 |
-| DELETE | `/users/me` | 必要 | 退会・ユーザー削除 |
+| DELETE | `/users/me` | 必要 | 退会・ユーザー削除 (そのユーザーの投稿も削除) |
+| GET | `/posts/{id}` | 必要 | 投稿詳細取得 |
 
 *`/auth/refresh` は Bearer トークンの代わりにボディの `refreshToken` で認証する。
 
@@ -390,6 +394,12 @@ curl http://localhost:3000/users/me \
 curl -X POST http://localhost:3000/auth/logout \
   -H "Api-Version: 1" \
   -H "Authorization: Bearer <TOKEN>"
+
+# 投稿詳細取得
+curl http://localhost:3000/posts/1 \
+  -H "Api-Version: 1" \
+  -H "Authorization: Bearer <TOKEN>"
+# => {"id":1,"title":"...","body":"...","tags":["history","american","crime"],"reactions":{"likes":192,"dislikes":25},"views":305,"userId":1}
 
 # 退会
 curl -X DELETE http://localhost:3000/users/me \

@@ -1,7 +1,7 @@
 # app backend
 
 スマホアプリ(iOS)向けのバックエンド API。
-ログイン / ログアウト / プロフィール確認 / 退会 の 4 機能を提供する。
+新規登録 / ログイン / トークン再発行 / ログアウト / プロフィール確認 / 退会 の機能を提供する。
 
 設計の詳細は [`project-context.md`](./project-context.md) を参照。
 
@@ -32,12 +32,20 @@ src/
   ├── middlewares/   # 認証 / APIバージョン / エラーハンドラ / リクエストログ
   ├── lib/           # logger, prisma, jwt, errors, validation, openapi
   ├── config/        # 環境変数の検証
+  ├── types.ts       # 共有型 (Hono Context の型定義など)
+  ├── app.ts         # Hono アプリ本体 (ミドルウェア / ルート登録)
   └── index.ts       # エントリーポイント
 prisma/
   ├── schema.prisma  # DB スキーマ
+  ├── migrations/    # マイグレーション SQL
   └── seed.ts        # 開発用シードデータ
-tests/services/      # Service 層のユニットテスト
-tests/routes/        # ルートレベルの統合テスト (実 DB 使用)
+tests/
+  ├── setup.ts       # テスト用環境変数の設定
+  ├── services/      # Service 層のユニットテスト (DB 不要)
+  └── routes/        # ルートレベルの統合テスト (実 DB 使用)
+docs/
+  ├── guide/         # コードリーディング / 拡張方法のガイド (HTML)
+  └── backend-improvement-plan.md  # バックエンド改善計画
 logs/                # 日次ログファイル (開発時のみ / Git 管理外)
 ```
 
@@ -65,6 +73,15 @@ make down    # 終了: DB コンテナを停止 (データは残る)
 make help    # 使えるコマンド一覧を表示
 ```
 
+その他のよく使うコマンド:
+
+| コマンド | 内容 |
+|---|---|
+| `make setup` | DB 起動 + マイグレーション + シードまで実行 (開発サーバーは起動しない) |
+| `make test` | DB を起動してからテストを実行 |
+| `make reset` | DB を全削除 → 再マイグレーション → 再シード |
+| `make fclean` | コンテナ + DB データ + `node_modules` / `dist` を削除 (完全初期化) |
+
 > `make up` は開発サーバーをそのターミナルで前面実行する (ホットリロードのログが見える)。
 > サーバーを止めるときは `Ctrl + C`、DB も止めるときは続けて `make down`。
 
@@ -79,7 +96,7 @@ nvm use                          # 1. Node 22 に切り替え
 npm install                      # 2. 依存パッケージをインストール
 cp .env.example .env             # 3. 環境変数ファイルを作成し、中身を設定 (下記参照)
 docker compose up -d             # 4. PostgreSQL (DB) をコンテナで起動
-npm run prisma:migrate           # 5. DB にテーブルを作成 (初回の name は init などでよい)
+npm run prisma:migrate           # 5. DB にテーブルを作成 (既存のマイグレーションを適用)
 npm run db:seed                  # 6. 動作確認用のテストユーザーを投入
 npm run dev                      # 7. サーバー起動
 ```
@@ -145,6 +162,7 @@ PORT=3000
 | `JWT_SECRET` | JWT 署名用のシークレット。**本番では32文字以上のランダム値が必須**(開発用デフォルト値のままだと起動に失敗する) |
 | `PORT` | サーバーの待ち受けポート (デフォルト 3000) |
 | `CORS_ORIGINS` | CORS で許可するオリジン(カンマ区切り、任意)。開発環境では未設定でも localhost が許可される |
+| `NODE_ENV` | `development` (デフォルト) / `production` / `test`。`production` では `JWT_SECRET` の強度チェックが有効になり、ログは stdout への JSON のみになる。`test` ではレートリミットが無効になる |
 
 > `.env` は Git 管理外です。共有が必要な変数は `.env.example` に空値で追記してください。
 
@@ -188,7 +206,7 @@ npm run prisma:migrate      # マイグレーション適用 + Client 自動生�
 npm run db:seed
 ```
 
-開発用に以下の 3 ユーザーが投入される (パスワードはすべて `password123`、設計上いまは平文保存)。
+開発用に以下の 3 ユーザーが投入される (パスワードはすべて `password123`。投入時に Argon2id でハッシュ化して保存される)。
 
 | id | name | email | password |
 |---|---|---|---|
@@ -273,7 +291,7 @@ npm run prisma:studio
 | `npm run dev` | 開発サーバー起動 (ホットリロード) |
 | `npm run build` | TypeScript を `dist/` にビルド |
 | `npm start` | ビルド済みサーバーを起動 |
-| `npm test` | Service 層のユニットテストを実行 |
+| `npm test` | ユニットテスト + 統合テストを実行 (事前に DB の起動が必要) |
 | `npm run test:watch` | テストをウォッチ実行 |
 | `npm run lint` / `lint:fix` | ESLint |
 | `npm run format` / `format:check` | Prettier |
@@ -329,10 +347,12 @@ API 仕様書はコードから自動生成される。サーバー起動後、�
 | ステータス | ケース |
 |---|---|
 | 200 | 成功 (取得・更新) |
+| 201 | 成功 (作成: 新規登録) |
 | 204 | 成功 (削除) |
 | 400 | バリデーションエラー |
 | 401 | 認証エラー |
 | 404 | リソースなし |
+| 409 | 競合 (メールアドレス重複など / `CONFLICT`) |
 | 429 | レートリミット超過 (`RATE_LIMITED`) |
 | 500 | サーバーエラー |
 
@@ -342,11 +362,24 @@ API 仕様書はコードから自動生成される。サーバー起動後、�
 ### リクエスト例 (curl)
 
 ```bash
+# 新規登録 (レスポンスは login と同じ形式。登録と同時にログイン状態になる)
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -H "Api-Version: 1" \
+  -d '{"name":"山田太郎","email":"new@example.com","password":"password123"}'
+
 # ログイン
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
   -H "Api-Version: 1" \
   -d '{"email":"test1@example.com","password":"password123"}'
+# => {"token":"<アクセストークン>","refreshToken":"<リフレッシュトークン>","id":1,"name":"テストユーザー1","email":"test1@example.com"}
+
+# トークン再発行 (使った refreshToken は無効になるので、レスポンスの新しい値に置き換える)
+curl -X POST http://localhost:3000/auth/refresh \
+  -H "Content-Type: application/json" \
+  -H "Api-Version: 1" \
+  -d '{"refreshToken":"<REFRESH_TOKEN>"}'
 
 # プロフィール取得 (TOKEN は login のレスポンスの token)
 curl http://localhost:3000/users/me \
@@ -395,12 +428,39 @@ VSCode の REST Client / Postman でも同様にテストできる。
 ## テスト
 
 ```bash
+docker compose up -d   # 統合テストが DB を使うため先に起動しておく
 npm test
+
+# または、DB 起動からまとめて実行
+make test
 ```
 
-- Service 層のユニットテストのみ実施 (Controller / Repository はスキップ)。
-- Repository は `vi.mock` で差し替え、実 DB には接続しない。
-- テストは `tests/services/` に配置。
+| 種類 | 配置 | 内容 |
+|---|---|---|
+| ユニットテスト | `tests/services/` | Service 層のテスト。Repository は `vi.mock` で差し替え、DB には接続しない |
+| 統合テスト | `tests/routes/` | `app.request()` で HTTP レイヤーから実 DB まで通しで検証する |
+
+- 統合テストは docker-compose の Postgres 上の **`test` スキーマ** を使うため、開発データ (`public` スキーマ) には影響しない。
+- 接続先を変えたい場合は `TEST_DATABASE_URL` を指定する (未指定時は `postgresql://app:app@localhost:5432/app?schema=test`)。
+- テスト用の環境変数は `tests/setup.ts` で設定される (`NODE_ENV=test` のためレートリミットは無効)。
+
+---
+
+## Docker イメージ (本番用)
+
+`Dockerfile` はマルチステージビルドで、本番実行に必要なものだけを含む最小イメージを作る。
+
+```bash
+docker build -t app-backend .
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
+  app-backend
+```
+
+- イメージ内では `NODE_ENV=production` が設定済み (`JWT_SECRET` は 32 文字以上が必須)。
+- 非 root ユーザー (`node`) で実行される。
+- **マイグレーションはコンテナ起動時には実行されない。** デプロイパイプライン側で `npx prisma migrate deploy` を実行すること。
 
 ---
 
@@ -409,7 +469,9 @@ npm test
 | 症状 | 対処 |
 |---|---|
 | `Can't reach database server` | `docker compose ps` で PostgreSQL の起動を確認。`docker compose up -d` で起動。 |
-| `環境変数の読み込みに失敗しました` | `.env` の `DATABASE_URL` / `JWT_SECRET` を確認。 |
+| `環境変数の読み込みに失敗しました` | `.env` の `DATABASE_URL` / `JWT_SECRET` を確認。`NODE_ENV=production` の場合は `JWT_SECRET` が 32 文字以上か確認。 |
 | Node のバージョンエラー | `nvm use` で Node 18 以上に切り替え。 |
-| 401 が返る | `Authorization` ヘッダーと、再ログインによる `current_token` 上書き (後勝ち) を確認。 |
+| API が 401 を返す | `Authorization: Bearer <token>` ヘッダーを確認。アクセストークンは 15 分で切れるので `/auth/refresh` で再発行する。 |
+| `/auth/refresh` が 401 を返す | 別端末での再ログインで上書きされた (後勝ち)、使用済みのリフレッシュトークンを再利用した、または 30 日の期限切れ。再ログインが必要。 |
+| `npm test` で DB 接続エラー | `docker compose up -d` で Postgres を起動してから実行 (または `make test`)。 |
 ```
